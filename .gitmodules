@@ -1,0 +1,3 @@
+[submodule "gatb"]
+	path = gatb
+	url = git@github.com:GATB/gatb-core.git
