@@ -1,0 +1,55 @@
+/*
+## Copyright (C) <2017>  <bioMerieux, Universite Claude Bernard Lyon 1,
+## Centre National de la Recherche Scientifique>
+
+## 1. This program is free software: you can redistribute it and/or modify
+## it under the terms of the GNU Affero General Public License as published
+## by the Free Software Foundation version 3 of the  License and under the
+## terms of article 2 below.
+## 2. This program is distributed in the hope that it will be useful, but
+## WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+## or FITNESS FOR A PARTICULAR PURPOSE. See below the GNU Affero General
+## Public License for more details.
+## You should have received a copy of the GNU Affero General Public License
+## along with this program.  If not, see <http://www.gnu.org/licenses/>.
+## 3. Communication to the public by any means, in particular in the form of
+## a scientific paper, a poster, a slideshow, an internet page, or a patent,
+## of a result obtained directly or indirectly by running this program must
+## cite the following paper :
+##  Magali Jaillard, Maud Tournoud, Leandro Lima, Vincent Lacroix,
+##  Jean-Baptiste Veyrieras and Laurent Jacob, "Representing Genetic
+##  Determinants in Bacterial GWAS with Compacted De Bruijn Graphs", 2017,
+##  Cold Spring Harbor Labs Journals, doi:10.1101/113563.
+##  (url: http://www.biorxiv.org/content/early/2017/03/03/113563)
+## -------------------------------------------------------------------------
+
+## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+*/
+
+#ifndef KSGATB_PHENOCOUNTER_H
+#define KSGATB_PHENOCOUNTER_H
+
+
+//class used to count how many times a unitig is seen overall, in phenotype 0, 1 or NA
+class PhenoCounter {
+private:
+    int pheno0;
+    int pheno1;
+    int NA;
+public:
+    PhenoCounter(int pheno0=0, int pheno1=0, int NA=0):pheno0(pheno0), pheno1(pheno1), NA(NA){}
+    int getPheno0() const { return pheno0; }
+    void increasePheno0(int n) { pheno0+=n; }
+
+    int getPheno1() const { return pheno1; }
+    void increasePheno1(int n) { pheno1+=n; }
+
+    int getNA() const { return NA; }
+    void increaseNA(int n) { NA+=n; }
+
+    int getTotal() const { return getPheno0() + getPheno1() + getNA(); }
+    int getSumOfBothPhenos() const { return getPheno0() + getPheno1(); }
+};
+
+
+#endif //KSGATB_PHENOCOUNTER_H
