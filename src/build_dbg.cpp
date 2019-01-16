@@ -46,7 +46,7 @@ using namespace std;
 build_dbg::build_dbg ()  : Tool ("build_dbg") //give a name to our tool
 {
     setVersion([](void* whatever) {
-        cout << "DBGWAS v" << VERSION << endl;
+        cout << "unitig-counter v" << VERSION << endl;
     });
     populateParser(this);
 }
@@ -241,7 +241,7 @@ void build_dbg::execute ()
 {
     cerr << "Step 1. Building DBG and mapping strains on the DBG..." << endl;
     checkParametersBuildDBG(this);
-    if (skip1) return;
+    if (run2) return;
 
     //get the parameters
     int kmerSize = getInput()->getInt(STR_KSKMER_SIZE);
@@ -253,7 +253,7 @@ void build_dbg::execute ()
     //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
 
     //create the step1 folder in the outputfolder
-    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/step1");
+    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/unitigs");
     createFolder(outputFolder);
 
     //create the tmp folder of step1

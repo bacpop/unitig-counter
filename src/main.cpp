@@ -24,6 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 // We include the header file for the tool
@@ -58,15 +59,11 @@ int main (int argc, char* argv[])
         map_reads().run(argc, argv);
         cerr << "Done!" << endl;
 
-        //Run the statistical test
-        cerr << "Step 2. Running statistical test (bugwas + gemma)..." << endl;
-        statistical_test().run(argc, argv);
-        cerr << "Done!" << endl;
-
         //Find the neighbourhood around significant unitigs...
-        cerr << "Step 3. Building visualisation around significant unitigs..." << endl;
-        generate_output().run(argc, argv);
-        cerr << "Done!" << endl;
+        // This may be useful for short unitigs
+        //cerr << "Step 3. Building visualisation around significant unitigs..." << endl;
+        //generate_output().run(argc, argv);
+        //cerr << "Done!" << endl;
     }
     catch (Exception& e)
     {

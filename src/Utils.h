@@ -117,8 +117,8 @@ public:
 };
 
 struct Strain {
-    string id, phenotype, path;
-    Strain(const string &id, const string &phenotype, const string &path) : id(id), phenotype(phenotype) {
+    string id, path;
+    Strain(const string &id, const string &path) : id(id) {
       //transfor to canonical path
       boost::filesystem::path boostPath(boost::filesystem::canonical(path));
       this->path = boostPath.string();
@@ -134,35 +134,6 @@ struct Strain {
       fout.close();
     }
 
-    static void createIdPhenoFile(const string &filePath, vector< Strain >* strains) {
-      ofstream fout;
-      openFileForWriting(filePath, fout);
-      fout << "ID\tpheno" << endl;
-
-      for (const auto &strain : (*strains))
-        fout << strain.id << "\t" << strain.phenotype << endl;
-
-      fout.close();
-    }
-
-    //create a file with 2 ints. The first is the nb of pheno0 strains and the second is the nb of pheno1 strains
-    static void createFileWithAmountOfStrainsInEachPheno(const string &filePath, vector< Strain >* strains) {
-      ofstream fout;
-      openFileForWriting(filePath, fout);
-
-      int pheno0Count=0;
-      int pheno1Count=0;
-      for (const auto &strain : (*strains)) {
-        if (strain.phenotype == "0")
-          pheno0Count++;
-        if (strain.phenotype == "1")
-          pheno1Count++;
-      }
-
-      fout << pheno0Count << " " << pheno1Count;
-
-      fout.close();
-    }
 };
 
 

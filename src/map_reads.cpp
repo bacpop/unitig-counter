@@ -203,21 +203,26 @@ void generate_XU(const string &filename, const vector< vector<int> > &XU) {
     ofstream XUFile;
     openFileForWriting(filename, XUFile);
 
-    //print the header
-    XUFile << "ps";
-    for (const auto &strain : (*strains))
-        XUFile << " " << strain.id;
-    XUFile << endl;
+    //open file with list of node sequences
+    string nodesFile = OutputFolder+string("/graph.nodes");
+    ifstream nodesFileReader;
+    openFileForReading(nodesFile, nodesFileReader);
+    int id;
+    string seq;
 
     for (int i=0;i<XU.size();i++) {
-        //print the unitig id
-        XUFile << (i);
+        print the unitig sequence
+        nodesFileReader >> id >> seq
+        XUFile << seq << " | ";
 
-        //print the frequences/binaries
+        //print the strains present
         for (int j=0;j<XU[i].size();j++)
-            XUFile << " " << XU[i][j];
+            if (XU[i][j] > 0) {
+                XUFile << " " << strains[j].id << ":" << XU[i][j];
+            }
         XUFile << endl;
     }
+    nodesFileReader.close();
     XUFile.close();
 }
 
@@ -242,54 +247,13 @@ void generate_unique_id_to_original_ids(const string &filename,
     uniqueIdToOriginalIdsFile.close();
 }
 
-void generate_unique_id_to_original_ids(const string &uniqueIdToOriginalIdsFilename,
-                                        const string &gemmaPatternToNbUnitigsFilename,
-                                        const string &gemmaUnitigToPatternFilename,
-                                        const map< vector<int>, vector<int> > &pattern2Unitigs) {
-    ofstream uniqueIdToOriginalIdsFile;
-    openFileForWriting(uniqueIdToOriginalIdsFilename, uniqueIdToOriginalIdsFile);
-    ofstream gemmaPatternToNbUnitigsFile;
-    openFileForWriting(gemmaPatternToNbUnitigsFilename, gemmaPatternToNbUnitigsFile);
-    ofstream gemmaUnitigToPatternFile;
-    openFileForWriting(gemmaUnitigToPatternFilename, gemmaUnitigToPatternFile);
-
-    //for each pattern
-    int i=0;
-    auto it=pattern2Unitigs.begin();
-    for (;it!=pattern2Unitigs.end();++it, ++i) {
-        //goes through the unitigos of this file
-        for (auto id : it->second) {
-            //uniqueIdToOriginalIdsFile
-            //print all the unitigs of a pattern i in line i
-            uniqueIdToOriginalIdsFile << id << " ";
-            //uniqueIdToOriginalIdsFile
-
-            //gemmaUnitigToPatternFile
-            gemmaUnitigToPatternFile << id << " " << i << endl;
-            //gemmaUnitigToPatternFile
-        }
-        uniqueIdToOriginalIdsFile << endl;
-        //uniqueIdToOriginalIdsFile
-
-
-
-        //gemmaPatternToNbUnitigsFile
-        gemmaPatternToNbUnitigsFile << i << " " << (it->second).size() << endl;
-        //gemmaPatternToNbUnitigsFile
-    }
-
-    uniqueIdToOriginalIdsFile.close();
-    gemmaPatternToNbUnitigsFile.close();
-    gemmaUnitigToPatternFile.close();
-}
-
 void generate_XU_unique(const string &filename, const vector< vector<int> > &XU,
                         const map< vector<int>, vector<int> > &pattern2Unitigs){
     ofstream XUUnique;
     openFileForWriting(filename, XUUnique);
 
     //print the header
-    XUUnique << "ps";
+    XUUnique << "node_id";
     for (const auto &strain : (*strains))
         XUUnique << " " << strain.id;
     XUUnique << endl;
@@ -309,14 +273,11 @@ void generate_XU_unique(const string &filename, const vector< vector<int> > &XU,
     XUUnique.close();
 }
 
-//generate the bugwas input
-void generateBugwasInput (const vector <string> &allReadFilesNames, const string &outputFolder, const string &tmpFolder, int nbContigs) {
-    //Generate the XU (the bugwas input - the matrix where the unitigs are rows and the strains are columns)
+//generate the pyseer input
+void generatePyseerInput (const vector <string> &allReadFilesNames, const string &outputFolder, const string &tmpFolder, int nbContigs) {
+    //Generate the XU (the pyseer input - the matrix where the unitigs are rows with strains present)
     //XU_unique is XU with the duplicated rows removed
     cerr << endl << endl << "[Generating bugwas and gemma input]..." << endl;
-
-    //create the ID and Phenotype file
-    Strain::createIdPhenoFile(outputFolder+string("/bugwas_input.id_phenotype"), strains);
 
     //Create XU
     vector< vector<int> > XU(nbContigs);
@@ -332,99 +293,17 @@ void generateBugwasInput (const vector <string> &allReadFilesNames, const string
         inputFile.close();
     }
 
-    //create a binary XU
-    vector< vector<int> > XUbinary(XU);
-
-    //creates also a file saying if the unitig was inverted (-1) or not (1)
-    //this is a multiplicative factor that will correct the weight (estimated effect) from the statistical test
-    ofstream weightCorrectionStream;
-    openFileForWriting(outputFolder+string("/weight_correction"), weightCorrectionStream);
-
-    for (int i=0;i<XUbinary.size();i++) {
-        //1. Transform frequency to binary
-        for (int j = 0; j < XUbinary[i].size(); j++)
-            XUbinary[i][j] = ((int)((bool)(XUbinary[i][j])));
-
-        //2. Transform to the enconding where 0 is the major allele and 1 is the minor one
-        //count how many 0s and 1s we have
-        int count0=0;
-        int count1=0;
-        for (int j=0;j<XUbinary[i].size();j++) {
-            if (XUbinary[i][j]==0) count0++;
-            if (XUbinary[i][j]==1) count1++;
-        }
-
-        //0 must be the major allele (we need to have more 0s than 1s). If it is not, 0 and 1 must be inverted
-        int iMustInvert = ((int)(count0 < count1));
-
-        //re-assign the values to XUbinary
-        for (int j=0;j<XUbinary[i].size();j++)
-            XUbinary[i][j] = ((XUbinary[i][j]+iMustInvert)%2);
-
-        weightCorrectionStream << (iMustInvert ? -1 : 1) << endl;
-    }
-    weightCorrectionStream.close();
-
-    //create the files for bugwas
-    /*
-     * TODO: THIS IS NOT CREATED RIGHT NOW BECAUSE WE CANNOT PROCESS IT - BUGWAS, FOR THE MOMENT, JUST ACCEPT THE 0/1 (BINARY) FILES
-     * TODO: PUT THIS BACK WHEN WE ARE ABLE TO DO IT
-     * TODO: IF THE COUNT MODE IS FREQ, ONLY THE BINARY VERSION IS USED FOR BUGWAS - FIX THIS
+    //create the files for pyseer
     {
-        generate_XU(outputFolder+string("/bugwas_input.all_rows.frequency"), XU);
+        generate_XU(outputFolder+string("/unitigs.txt"), XU);
         map< vector<int>, vector<int> > pattern2Unitigs = getUnitigsWithSamePattern(XU, nbContigs);
-        generate_unique_id_to_original_ids(outputFolder+string("/bugwas_input.unique_rows_to_all_rows.frequency"), pattern2Unitigs);
-        generate_XU_unique(outputFolder+string("/bugwas_input.unique_rows.frequency"), XU, pattern2Unitigs);
-    }
-     */
-
-    //create the files for bugwas - binary ones
-    {
-        generate_XU(outputFolder+string("/bugwas_input.all_rows.binary"), XUbinary);
-        map< vector<int>, vector<int> > pattern2Unitigs = getUnitigsWithSamePattern(XUbinary, nbContigs);
-        generate_unique_id_to_original_ids(outputFolder+string("/bugwas_input.unique_rows_to_all_rows.binary"),
-                                           outputFolder+string("/gemma_input.pattern_to_nb_of_unitigs.binary"),
-                                           outputFolder+string("/gemma_input.unitig_to_pattern.binary"),
-                                           pattern2Unitigs);
-        generate_XU_unique(outputFolder+string("/bugwas_input.unique_rows.binary"), XUbinary, pattern2Unitigs);
-    }
-    cerr << "[Generating bugwas and gemma input] - Done!" << endl;
-
-
-    //create the file showing the overall frequencies of each unitig
-    cerr << "[Generating the frequency files...]" << endl;
-    vector<PhenoCounter > unitigs2PhenoCounter(nbContigs);
-    for(int strainIndex=0;strainIndex<allReadFilesNames.size();strainIndex++) {
-        ifstream unitigCountForStrain;
-        openFileForReading(tmpFolder+string("/XU_strain_")+to_string(strainIndex), unitigCountForStrain);
-
-        for (int unitigIndex=0; unitigIndex<nbContigs; unitigIndex++) {
-            int count;
-            unitigCountForStrain >> count;
-            if ((*strains)[strainIndex].phenotype=="0")
-                unitigs2PhenoCounter[unitigIndex].increasePheno0(count);
-            else if ((*strains)[strainIndex].phenotype=="1")
-                unitigs2PhenoCounter[unitigIndex].increasePheno1(count);
-            else if ((*strains)[strainIndex].phenotype=="NA")
-                unitigs2PhenoCounter[unitigIndex].increaseNA(count);
-            else
-                throw runtime_error("[FATAL ERROR] on map_reads::execute () [Generating the frequency files...]");
-        }
-        unitigCountForStrain.close();
+        generate_unique_id_to_original_ids(outputFolder+string("/unitigs.unique_rows_to_all_rows.txt"), pattern2Unitigs);
+        generate_XU_unique(outputFolder+string("/unitigs.unique_rows.txt"), XU, pattern2Unitigs);
     }
 
-    ofstream frequencyFile;
-    openFileForWriting(outputFolder+string("/frequency_unitig_to_total_pheno0_pheno1_NA_count"), frequencyFile);
-    for (int unitigIndex=0; unitigIndex<nbContigs; unitigIndex++)
-        frequencyFile << unitigs2PhenoCounter[unitigIndex].getTotal() << " " << unitigs2PhenoCounter[unitigIndex].getPheno0() << " "
-                      << unitigs2PhenoCounter[unitigIndex].getPheno1() << " " << unitigs2PhenoCounter[unitigIndex].getNA() << endl;
-    frequencyFile.close();
+    cerr << "[Generating pyseer input] - Done!" << endl;
 
 
-    //create a file with the total nb of Pheno0 and Pheno1 strains
-    Strain::createFileWithAmountOfStrainsInEachPheno(outputFolder+string("/total_nb_of_strains_in_each_pheno"), strains);
-
-    cerr << "[Generating the frequency files...] - Done!" << endl;
 }
 
 /*********************************************************************
@@ -473,7 +352,7 @@ void map_reads::execute ()
                                    *nodeIdToUnitigId, nbContigs));
 
     //generate the bugwas input
-    generateBugwasInput(allReadFilesNames, outputFolder, tmpFolder, nbContigs);
+    generatePyseerInput(allReadFilesNames, outputFolder, tmpFolder, nbContigs);
 
     //after the mapping, free some memory that will not be needed anymore
     delete graph;
