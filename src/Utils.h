@@ -38,6 +38,7 @@
 #include <ctime>
 #include <sstream>
 #include <iostream>
+#include <iomanip>
 #include <limits>
 #include <iterator>
 #include <set>
@@ -136,95 +137,4 @@ struct Strain {
 };
 
 
-
-
-struct PatternFromStats {
-    int pattern;
-    long double qValue;
-    long double weight;
-    long double normalizedWeight;
-    string waldStatistic;
-
-    bool operator < (const PatternFromStats& other) const {
-      return this->qValue < other.qValue;
-    }
-
-    static vector<PatternFromStats> readFile(const string &filename, bool header=false) {
-      vector<PatternFromStats> patterns;
-
-      //read
-      {
-        ifstream patternStream;
-        openFileForReading(filename, patternStream);
-        patternStream >> setprecision(std::numeric_limits<long double>::digits10 + 1);
-        PatternFromStats pattern;
-
-        //remove header
-        if (header) {
-          string tmp;
-          getline(patternStream, tmp);
-        }
-        while (patternStream >> pattern.pattern >> pattern.qValue >> pattern.weight >> pattern.waldStatistic)
-          patterns.push_back(pattern);
-        patternStream.close();
-      }
-
-      //normalize
-      vector<long double>  normalizedWeights;
-      for (const auto &pattern : patterns)
-        normalizedWeights.push_back(pattern.weight);
-
-      //remove the minimum weight of everyone
-      long double minWeight = *min_element(normalizedWeights.begin(), normalizedWeights.end());
-      transform(normalizedWeights.begin(), normalizedWeights.end(), normalizedWeights.begin(), [&](long double weight) {
-          return weight-minWeight;
-      });
-
-      //transform to [0,1]
-      long double maxWeight = *max_element(normalizedWeights.begin(), normalizedWeights.end());
-      transform(normalizedWeights.begin(), normalizedWeights.end(), normalizedWeights.begin(), [&](long double weight) {
-          return weight/maxWeight;
-      });
-
-      //write back
-      auto normalizedWeightsIt = normalizedWeights.begin();
-      for (auto &pattern : patterns) {
-        pattern.normalizedWeight = *normalizedWeightsIt;
-        ++normalizedWeightsIt;
-      }
-
-      return patterns;
-    }
-
-    static void writeFile(const string &filename, const vector<PatternFromStats> &patterns) {
-      ofstream patternSortedStream;
-      openFileForWriting(filename, patternSortedStream);
-      patternSortedStream << setprecision(std::numeric_limits<long double>::digits10 + 1);
-      patternSortedStream << "pattern q-value weight wald_statistic" << endl;
-      for (const auto &pattern : patterns)
-        patternSortedStream << pattern.pattern << " " << pattern.qValue << " " << pattern.weight << " " << pattern.waldStatistic << endl;
-      patternSortedStream.close();
-    }
-};
-
-
-
-
-
-//get the significant patterns according to SFF
-class GetSignificantPatterns
-    : public boost::static_visitor<>
-{
-private:
-    const vector<PatternFromStats> &patterns;
-    vector<PatternFromStats> &significantPatterns;
-public:
-    GetSignificantPatterns(const vector<PatternFromStats> &patterns, vector<PatternFromStats> &significantPatterns) :
-        patterns(patterns), significantPatterns(significantPatterns){}
-
-    void operator()(int &n) const;
-
-    void operator()(double &qValue) const;
-
-};
 #endif //KISSPLICE_UTILS_H

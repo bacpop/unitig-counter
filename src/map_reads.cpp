@@ -211,7 +211,7 @@ void generate_XU(const string &filename, const vector< vector<int> > &XU) {
     string seq;
 
     for (int i=0;i<XU.size();i++) {
-        print the unitig sequence
+        // print the unitig sequence
         nodesFileReader >> id >> seq
         XUFile << seq << " | ";
 
@@ -253,7 +253,7 @@ void generate_XU_unique(const string &filename, const vector< vector<int> > &XU,
     openFileForWriting(filename, XUUnique);
 
     //print the header
-    XUUnique << "node_id";
+    XUUnique << "pattern_id";
     for (const auto &strain : (*strains))
         XUUnique << " " << strain.id;
     XUUnique << endl;

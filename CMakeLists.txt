@@ -31,7 +31,7 @@ set (gatb-tool-version ${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${g
 ################################################################################
 # Define cmake modules directory
 ################################################################################
-SET (GATB_CORE_HOME  ${PROJECT_SOURCE_DIR}/gatb/gatb-core)
+SET (GATB_CORE_HOME  ${PROJECT_SOURCE_DIR}/gatb-core/gatb-core)
 SET (CMAKE_MODULE_PATH ${GATB_CORE_HOME}/cmake)
 
 ################################################################################
@@ -56,16 +56,6 @@ include (GatbCore)
 ################################################################################
 #  TOOLS
 ################################################################################
-MACRO(SUBDIRLIST result curdir)
-    FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
-    SET (dirlist "")
-    FOREACH(child ${children})
-      IF(IS_DIRECTORY ${curdir}/${child})
-          LIST(APPEND dirlist ${child})
-      ENDIF()
-    ENDFOREACH()
-    SET(${result} ${dirlist})
-ENDMACRO()
 
 # We add the compilation options for the library
 add_definitions (${gatb-core-flags})
@@ -77,8 +67,8 @@ include_directories (${gatb-core-includes})
 set (PSTREAMS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/pstreams/)
 include_directories (${PSTREAMS_SOURCE_DIR})
 
-set(BOOST_ROOT ${CMAKE_BINARY_DIR}/../Dependencies/Source/boost_1_62_0)
-set(Boost_USE_STATIC_LIBS   ON) #This makes boost plug the libraries we specify as static libraries (not dynamic ones - the user does not even need to have boost installed in their pc)
+set(BOOST_ROOT /usr/bin/include)
+set(Boost_USE_STATIC_LIBS   ON)
 FIND_PACKAGE(Boost 1.62.0 COMPONENTS filesystem system regex REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
@@ -86,18 +76,13 @@ include_directories(${Boost_INCLUDE_DIR})
 link_directories (${gatb-core-extra-libraries-path})
 link_directories(${Boost_LIBRARY_DIR})
 
-# We get the list of subdirectories names
-SUBDIRLIST(PROGRAMS ${PROJECT_SOURCE_DIR}/tools)
-
 # We create a target for each
-FOREACH (program ${PROGRAMS})
-  set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/tools/${program}/src)
-  include_directories (${PROGRAM_SOURCE_DIR})
-  file (GLOB_RECURSE  ProjectFiles  ${PROGRAM_SOURCE_DIR}/*.cpp)
-  file (GLOB_RECURSE  WhereamiFiles  ${WHEREAMI_SOURCE_DIR}/*.c)
-  add_executable(${program} ${ProjectFiles} ${WhereamiFiles})
-  target_link_libraries(${program} ${gatb-core-libraries} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
-ENDFOREACH (program)
+set(PROGRAM unitig-counter)
+set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
+include_directories (${PROGRAM_SOURCE_DIR})
+file (GLOB_RECURSE  ProjectFiles  ${PROGRAM_SOURCE_DIR}/*.cpp)
+add_executable(${PROGRAM} ${ProjectFiles} ${WhereamiFiles})
+target_link_libraries(${PROGRAM} ${gatb-core-libraries} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
 
 ################################################################################
 #  INSTALLATION

@@ -28,7 +28,6 @@
 
 #include "Utils.h"
 #include "global.h"
-#include "Blast.h"
 
 using namespace std;
 
@@ -90,8 +89,6 @@ void checkStrainsFile(const string &strainsFile) {
   openFileForReading(strainsFile, input);
   set<string> allIds;
 
-  bool pheno0IsPresent=false;
-  bool pheno1IsPresent=false;
   for(string line; getline( input, line ); )
   {
     //parse header
@@ -107,8 +104,8 @@ void checkStrainsFile(const string &strainsFile) {
     //create the strain
     stringstream ss;
     ss << line;
-    string id, pheno, path;
-    ss >> id >> pheno >> path;
+    string id, path;
+    ss >> id >> path;
 
     //check for duplicated IDs
     if (allIds.find(id)!=allIds.end()) {
@@ -117,21 +114,6 @@ void checkStrainsFile(const string &strainsFile) {
       fatalError(ss.str());
     }
     allIds.insert(id);
-
-    //check for disallowed phenotypes
-    if (pheno!="0" && pheno!="1" && pheno!="NA") {
-      stringstream ss;
-      ss << "Phenotype not allowed: " << pheno << " . The only allowed values for phenotype are 0, 1 or NA." << endl;
-      fatalError(ss.str());
-    }
-
-    //only allowed phenotypes here, check if pheno0IsPresent
-    if (pheno=="0")
-      pheno0IsPresent=true;
-
-    //only allowed phenotypes here, check if pheno1IsPresent
-    if (pheno=="1")
-      pheno1IsPresent=true;
 
     //check if the path is ok
     ifstream file;
@@ -143,26 +125,11 @@ void checkStrainsFile(const string &strainsFile) {
     }
     file.close();
 
-    //add the strain if it is different from NA
-    if (pheno=="NA") {
-      cerr << "[WARNING] Skipping strain " << id << " because its phenotype is NA" << endl;
-    }else {
-      Strain strain(id, pheno, path);
-      localStrains.push_back(strain);
-    }
+    //add the strain
+    Strain strain(id, path);
+    localStrains.push_back(strain);
   }
   input.close();
-
-  if (pheno0IsPresent==false) {
-    stringstream ss;
-    ss << "No strains with Phenotype 0 was found in input file " << strainsFile << ". Please provide at least one strain with Phenotype 0.";
-    fatalError(ss.str());
-  }
-  if (pheno1IsPresent==false) {
-    stringstream ss;
-    ss << "No strains with Phenotype 1 was found in input file " << strainsFile << ". Please provide at least one strain with Phenotype 1.";
-    fatalError(ss.str());
-  }
 
   //in the end, check if strain is null. If it is, populate it
   if (strains==NULL)
@@ -224,66 +191,13 @@ int getNbLinesInFile(const string &filename) {
   return n;
 }
 
-void checkExecutables(Tool *tool) {
-  //configure the global vars of the executable paths
-  gemmaPath = tool->getInput()->getStr(STR_GEMMA_PATH);
-  blastPath = tool->getInput()->getStr(STR_BLAST_PATH);
-  phantomjsPath = tool->getInput()->getStr(STR_PHANTOMJS_PATH);
-  RscriptPath = tool->getInput()->getStr(STR_RSCRIPT_PATH);
-
-  //fix the variables
-  boost::replace_all(gemmaPath, "<DBGWAS_lib>", DBGWAS_lib);
-  boost::replace_all(blastPath, "<DBGWAS_lib>", DBGWAS_lib);
-  boost::replace_all(phantomjsPath, "<DBGWAS_lib>", DBGWAS_lib);
-  boost::replace_all(RscriptPath, "<DBGWAS_lib>", DBGWAS_lib);
-
-  //check if the executables work
-  //check gemma
-  executeCommand(gemmaPath, false, gemmaPath + " does not work, but it is required. You can install a version of GEMMA that works on your system and tell DBGWAS to use it through the parameter " + STR_GEMMA_PATH + " ."); //if it returns an exit status != 0, then it does not work and we issue a fatal error
-
-  //check Rscript
-  executeCommand(RscriptPath+" --version", false, RscriptPath + " does not work, but it is required. You can install a version of R that works on your system and tell DBGWAS to use it through the parameter " + STR_RSCRIPT_PATH + " .");
-
-  //check blast, if the user wants to annotate the subgraphs
-  if (tool->getInput()->get(STR_NUCLEOTIDE_DB)) {
-    executeCommand(blastPath+"/makeblastdb -version", false, string("You want to annotate the output subgraphs with ") + STR_NUCLEOTIDE_DB + " , but " + blastPath+"/makeblastdb does not work. You can install a version of the Blast suite that works on your system" +
-        " and tell DBGWAS to use it through the parameter " + STR_BLAST_PATH + " .");
-    executeCommand(blastPath+"/blastn -version", false, string("You want to annotate the output subgraphs with ") + STR_NUCLEOTIDE_DB + " , but " + blastPath+"/blastn does not work. You can install a version of the Blast suite that works on your system" +
-        " and tell DBGWAS to use it through the parameter " + STR_BLAST_PATH + " .");
-  }
-  if (tool->getInput()->get(STR_PROTEIN_DB)) {
-    executeCommand(blastPath+"/makeblastdb -version", false, string("You want to annotate the output subgraphs with ") + STR_PROTEIN_DB + " , but " + blastPath+"/makeblastdb does not work. You can install a version of the Blast suite that works on your system" +
-        " and tell DBGWAS to use it through the parameter " + STR_BLAST_PATH + " .");
-    executeCommand(blastPath+"/blastx -version", false, string("You want to annotate the output subgraphs with ") + STR_PROTEIN_DB + " , but " + blastPath+"/blastx does not work. You can install a version of the Blast suite that works on your system" +
-        " and tell DBGWAS to use it through the parameter " + STR_BLAST_PATH + " .");
-  }
-
-  //check phantomjs
-  if (tool->getInput()->get(STR_NO_PREVIEW) == 0) {
-    executeCommand(phantomjsPath+" --version", false, phantomjsPath + " does not work, DBGWAS cant produce the components preview on the summary output page." +
-                                             " Either you get a version of phantomjs that works on your system (DBGWAS was "
-                                             "tested with version 2.1.1) and tell DBGWAS to use it through the parameter " + STR_PHANTOMJS_PATH +
-                                             " , or you can choose to not produce the components preview "
-                                             "through the parameter " + STR_NO_PREVIEW + " .");
-  }
-}
-
 
 void checkParametersBuildDBG(Tool *tool) {
   //check if we skip or not
-  skip1 = tool->getInput()->get(STR_SKIP1) != 0;
-  skip2 = tool->getInput()->get(STR_SKIP2) != 0;
-  hasNewickFile = tool->getInput()->get(STR_NEWICK_PATH) != 0;
+  run1 = tool->getInput()->get(STR_RUN1) != 0;
+  run2 = tool->getInput()->get(STR_RUN2) != 0;
 
-  if (skip2) skip1=true;
-
-  if (skip1) {
-    cerr << "Skipping Step 1!" << endl;
-    return;
-  }
-
-  //check executables and parameters
-  checkExecutables(tool);
+  if (run2) run1=false;
 
   //check the count mode
   //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
@@ -312,31 +226,8 @@ void checkParametersBuildDBG(Tool *tool) {
 }
 
 
-void checkParametersStatisticalTest(Tool *tool) {
-  if (skip2) {
-    cerr << "Skipping Step 2!" << endl;
-    return;
-  }
-
-  //check executables and parameters
-  checkExecutables(tool);
-
-  //check if newickTreeFilePath exists
-  if (hasNewickFile) {
-    string newickTreeFilePath = tool->getInput()->getStr(STR_NEWICK_PATH);
-    boost::filesystem::path p(newickTreeFilePath.c_str());
-    if (!boost::filesystem::exists(p)) {
-      stringstream ss;
-      ss << "Error locating newick tree file path: " << newickTreeFilePath;
-      fatalError(ss.str());
-    }
-  }
-}
-
 
 void checkParametersGenerateOutput(Tool *tool) {
-  //check executables and parameters
-  checkExecutables(tool);
 
   //create the output folder for step 3
   string outputFolder = stripLastSlashIfExists(tool->getInput()->getStr(STR_OUTPUT))+string("/step3");
@@ -386,22 +277,6 @@ void checkParametersGenerateOutput(Tool *tool) {
     SFF = n;
   }
 
-  //check the nucleotide DB
-  if (tool->getInput()->get(STR_NUCLEOTIDE_DB)) {
-    //build the nucleotide DB
-    nucleotideDBPath = Blast::makeblastdb("nucl", tool->getInput()->getStr(STR_NUCLEOTIDE_DB), outputFolder);
-    thereIsNucleotideDB=true;
-  }
-
-  //check the protein DB
-  if (tool->getInput()->get(STR_PROTEIN_DB)) {
-    //build the protein DB
-    proteinDBPath = Blast::makeblastdb("prot", tool->getInput()->getStr(STR_PROTEIN_DB), outputFolder);
-    thereIsProteinDB=true;
-  }
-
-  //get the -no-preview parameter
-  noPreview = tool->getInput()->get(STR_NO_PREVIEW) != 0;
 }
 
 
@@ -488,24 +363,3 @@ void createFolder(const string &path) {
   }
 }
 
-
-
-
-void GetSignificantPatterns::operator()(int &n) const
-{
-  n = min(n, (int)patterns.size());
-  int i=0;
-  for (const auto &pattern : patterns) {
-    if (i < n)
-      significantPatterns.push_back(pattern);
-    i++;
-  }
-}
-
-void GetSignificantPatterns::operator()(double &qValue) const
-{
-  for (const auto &pattern : patterns) {
-    if (pattern.qValue <= qValue)
-      significantPatterns.push_back(pattern);
-  }
-}
