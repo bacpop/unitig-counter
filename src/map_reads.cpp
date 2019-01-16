@@ -275,8 +275,8 @@ void generate_XU_unique(const string &filename, const vector< vector<int> > &XU,
 
 //generate the pyseer input
 void generatePyseerInput (const vector <string> &allReadFilesNames, const string &outputFolder, const string &tmpFolder, int nbContigs) {
-    //Generate the XU (the pyseer input - the matrix where the unitigs are rows with strains present)
-    //XU_unique is XU with the duplicated rows removed
+    //Generate the XU (the pyseer input - the unitigs are rows with strains present)
+    //XU_unique is XU is in matrix form (for Rtab input) with the duplicated rows removed
     cerr << endl << endl << "[Generating bugwas and gemma input]..." << endl;
 
     //Create XU

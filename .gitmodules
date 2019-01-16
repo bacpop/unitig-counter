@@ -1,3 +1,6 @@
 [submodule "gatb"]
-	path = gatb
+	path = gatb-core
 	url = git@github.com:GATB/gatb-core.git
+[submodule "build/pstreams"]
+	path = pstreams
+	url = git@github.com:jwakely/pstreams.git

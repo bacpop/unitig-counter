@@ -49,9 +49,6 @@ int main (int argc, char* argv[])
     // initialize random seed, in case we want to use rand(), we are already set
     srand (time(NULL));
 
-    //get the path to the dir were the executable is
-    DBGWAS_lib = getDirWhereDBGWASIsInstalled() + "/DBGWAS_lib/";
-
     try
     {
         //Build DBG

@@ -1,17 +1,6 @@
 cmake_minimum_required(VERSION 3.6)
 
-# Handle superbuild first
-option (USE_SUPERBUILD "Whether or not a superbuild should be invoked" ON)
-
-if (USE_SUPERBUILD)
-  project (SUPERBUILD NONE)
-  # execute the superbuild (this script will be invoked again without the
-  # USE_SUPERBUILD option this time)
-  include (boostSuperBuild/SuperBuild.cmake)
-  return()                      # stop processing this file further
-else()
-  project(DBGWAS)
-endif()
+project(UNITIGS)
 
 #
 # <usual CMakeLists.txt stuff goes here...>
@@ -24,7 +13,7 @@ SET (gatb-tool_VERSION_MINOR 5)
 SET (gatb-tool_VERSION_PATCH 2)
 
 #write the version number
-file(WRITE ${PROJECT_SOURCE_DIR}/tools/DBGWAS/src/version.h "\#define VERSION \"${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH}\"")
+file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h "\#define VERSION \"${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH}\"")
 
 
 IF (DEFINED MAJOR)
@@ -67,7 +56,6 @@ include (GatbCore)
 ################################################################################
 #  TOOLS
 ################################################################################
-#ADD_SUBDIRECTORY(tools)
 MACRO(SUBDIRLIST result curdir)
     FILE(GLOB children RELATIVE ${curdir} ${curdir}/*)
     SET (dirlist "")
@@ -88,10 +76,6 @@ include_directories (${gatb-core-includes})
 # We add the pstream include directory
 set (PSTREAMS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/pstreams/)
 include_directories (${PSTREAMS_SOURCE_DIR})
-
-# We add the whereami include directory
-set (WHEREAMI_SOURCE_DIR ${PROJECT_SOURCE_DIR}/whereami/src)
-include_directories (${WHEREAMI_SOURCE_DIR})
 
 set(BOOST_ROOT ${CMAKE_BINARY_DIR}/../Dependencies/Source/boost_1_62_0)
 set(Boost_USE_STATIC_LIBS   ON) #This makes boost plug the libraries we specify as static libraries (not dynamic ones - the user does not even need to have boost installed in their pc)
@@ -129,13 +113,13 @@ SET (CPACK_PACKAGE_VENDOR               "bioMerieux; LBBE; Erable")
 SET (CPACK_PACKAGE_VERSION_MAJOR        "${gatb-tool_VERSION_MAJOR}")
 SET (CPACK_PACKAGE_VERSION_MINOR        "${gatb-tool_VERSION_MINOR}")
 SET (CPACK_PACKAGE_VERSION_PATCH        "${gatb-tool_VERSION_PATCH}")
-SET (CPACK_PACKAGE_VERSION              "${gatb-tool-version}")  
+SET (CPACK_PACKAGE_VERSION              "${gatb-tool-version}")
 
 # We set the kind of archive
 SET (CPACK_GENERATOR                    "TGZ")
 SET (CPACK_SOURCE_GENERATOR             "TGZ")
 
-# Packaging the source ; we ignore unwanted files 
+# Packaging the source ; we ignore unwanted files
 SET (CPACK_SOURCE_IGNORE_FILES
         "^${PROJECT_SOURCE_DIR}/build/"
         "^${PROJECT_SOURCE_DIR}/builddebug/"
