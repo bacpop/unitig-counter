@@ -24,6 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 #ifndef _TOOL_map_reads_HPP_

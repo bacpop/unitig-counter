@@ -24,6 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 #ifndef KSGATB_GLOBAL_H
@@ -41,20 +42,13 @@ extern const char* STR_STRAINS_FILE;
 extern const char* STR_KSKMER_SIZE;
 extern const char* STR_OUTPUT;
 extern const char* STR_NBCORES;
-extern const char* STR_MAX_NEIGHBOURHOOD;
-extern const char* STR_RUN1;
-extern const char* STR_RUN2;
-extern const char* STR_SFF;
 extern const char* STR_MAF_FILTER;
 
 //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
 //extern const char* STR_COUNT_MODE;
 //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
 extern string DBGWAS_lib;
-extern bool run1;
-extern bool run2;
 extern bool presenceAbsenceCountMode;
-extern boost::variant< int, double > SFF;
 
 void populateParser (Tool *tool);
 

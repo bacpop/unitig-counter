@@ -24,12 +24,12 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 #include "global.h"
 #include "map_reads.hpp"
 #include "Utils.h"
-#include "PhenoCounter.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <map>
 #define NB_OF_READS_NOTIFICATION_MAP_AND_PHASE 10 //Nb of reads that the map and phase must process for notification
@@ -199,12 +199,11 @@ map< vector<int>, vector<int> > getUnitigsWithSamePattern (const vector< vector<
     return pattern2Unitigs;
 }
 
-void generate_XU(const string &filename, const vector< vector<int> > &XU) {
+void generate_XU(const string &filename, const string &nodesFile, const vector< vector<int> > &XU) {
     ofstream XUFile;
     openFileForWriting(filename, XUFile);
 
     //open file with list of node sequences
-    string nodesFile = OutputFolder+string("/graph.nodes");
     ifstream nodesFileReader;
     openFileForReading(nodesFile, nodesFileReader);
     int id;
@@ -212,13 +211,13 @@ void generate_XU(const string &filename, const vector< vector<int> > &XU) {
 
     for (int i=0;i<XU.size();i++) {
         // print the unitig sequence
-        nodesFileReader >> id >> seq
+        nodesFileReader >> id >> seq;
         XUFile << seq << " | ";
 
         //print the strains present
         for (int j=0;j<XU[i].size();j++)
             if (XU[i][j] > 0) {
-                XUFile << " " << strains[j].id << ":" << XU[i][j];
+                XUFile << " " << (*strains)[j].id << ":" << XU[i][j];
             }
         XUFile << endl;
     }
@@ -274,10 +273,12 @@ void generate_XU_unique(const string &filename, const vector< vector<int> > &XU,
 }
 
 //generate the pyseer input
-void generatePyseerInput (const vector <string> &allReadFilesNames, const string &outputFolder, const string &tmpFolder, int nbContigs) {
+void generatePyseerInput (const vector <string> &allReadFilesNames,
+                          const string &outputFolder, const string &tmpFolder,
+                          int nbContigs) {
     //Generate the XU (the pyseer input - the unitigs are rows with strains present)
     //XU_unique is XU is in matrix form (for Rtab input) with the duplicated rows removed
-    cerr << endl << endl << "[Generating bugwas and gemma input]..." << endl;
+    cerr << endl << endl << "[Generating pyseer input]..." << endl;
 
     //Create XU
     vector< vector<int> > XU(nbContigs);
@@ -295,7 +296,7 @@ void generatePyseerInput (const vector <string> &allReadFilesNames, const string
 
     //create the files for pyseer
     {
-        generate_XU(outputFolder+string("/unitigs.txt"), XU);
+        generate_XU(outputFolder+string("/unitigs.txt"), outputFolder+string("/graph.nodes"), XU);
         map< vector<int>, vector<int> > pattern2Unitigs = getUnitigsWithSamePattern(XU, nbContigs);
         generate_unique_id_to_original_ids(outputFolder+string("/unitigs.unique_rows_to_all_rows.txt"), pattern2Unitigs);
         generate_XU_unique(outputFolder+string("/unitigs.unique_rows.txt"), XU, pattern2Unitigs);
@@ -316,8 +317,6 @@ void generatePyseerInput (const vector <string> &allReadFilesNames, const string
 *********************************************************************/
 void map_reads::execute ()
 {
-    if (skip1) return;
-
     //get the parameters
     string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/step1");
     string tmpFolder = outputFolder+string("/tmp");

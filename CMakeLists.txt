@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.6)
 
 project(UNITIGS)
-
+set (CMAKE_CXX_STANDARD 11)
 #
 # <usual CMakeLists.txt stuff goes here...>
 #
@@ -50,6 +50,9 @@ SET (GATB_CORE_EXCLUDE_TOOLS     1)
 SET (GATB_CORE_EXCLUDE_TESTS     1)
 SET (GATB_CORE_EXCLUDE_EXAMPLES  1)
 
+# this stops the boost in gatb-core/thirdparty being used
+file(RENAME ${GATB_CORE_HOME}/thirdparty/boost ${GATB_CORE_HOME}/thirdparty/boost-old)
+
 # GATB CORE
 include (GatbCore)
 
@@ -60,17 +63,17 @@ include (GatbCore)
 # We add the compilation options for the library
 add_definitions (${gatb-core-flags})
 
-# We add the gatb-core include directory
-include_directories (${gatb-core-includes})
-
 # We add the pstream include directory
 set (PSTREAMS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/pstreams/)
 include_directories (${PSTREAMS_SOURCE_DIR})
 
 set(BOOST_ROOT /usr/bin/include)
 set(Boost_USE_STATIC_LIBS   ON)
-FIND_PACKAGE(Boost 1.62.0 COMPONENTS filesystem system regex REQUIRED)
+FIND_PACKAGE(Boost 1.69.0 COMPONENTS filesystem system regex REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
+
+# We add the gatb-core include directory
+include_directories (${gatb-core-includes})
 
 # We add the path for extra libraries
 link_directories (${gatb-core-extra-libraries-path})

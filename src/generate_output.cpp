@@ -24,6 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 #include "generate_output.h"
@@ -35,7 +36,6 @@
 #include <boost/graph/copy.hpp>
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string.hpp>
-#include "Blast.h"
 #include <algorithm>
 #define BOOST_NO_CXX11_SCOPED_ENUMS
 #include <boost/filesystem.hpp>
@@ -57,395 +57,13 @@ generate_output::generate_output ()  : Tool ("generate_output") //give a name to
   populateParser(this);
 }
 
-void generate_output::createIndexFile(int numberOfComponents, const string &visualisationsFolder, const string &step2OutputFolder, const vector<vector<MyVertex> > &nodesInComponent, graph_t& newGraph,
-                     map<int, AnnotationRecord > &idComponent2Annotations, const vector<const PatternFromStats*> &unitigToPatternStats,
-                     const vector<int> &selectedUnitigs, int nbCores) {
-  cerr << "[Creating index file...]" << endl;
-
-  //create the thumbnails in a multi-threaded way
-  // We create an iterator over an integer range
-  Range<int>::Iterator rangeOfComponentsIt(0, numberOfComponents - 1);
-
-  // We create a dispatcher configured for 'nbCores' cores.
-  Dispatcher dispatcher(nbCores, 1);
-
-  // We iterate the range
-  cerr << "[Rendering thumbnails...]" << endl;
-  dispatcher.iterate(rangeOfComponentsIt, [&](int i) {
-      string HTMLFile(boost::filesystem::canonical(visualisationsFolder+"/components/comp_"+std::to_string(i)+".html").string());
-      string PNGFile = HTMLFile+".png";
-
-      if (noPreview){
-        boost::filesystem::copy_file(DBGWAS_lib+"/lib/resources/nopreview.png", PNGFile, boost::filesystem::copy_option::overwrite_if_exists);
-      }
-      else {
-        stringstream commandSS;
-        commandSS << phantomjsPath << " " << DBGWAS_lib << "/render_graph.js " << HTMLFile << " " << PNGFile;
-        executeCommand(commandSS.str(), false);
-      }
-
-  });
-  cerr << "[Rendering thumbnails...] - Done!" << endl;
-
-
-
-  //create the index
-  //create the object previews for each component
-  vector<ObjectPreview> previews;
-
-  //get the template preview
-  string templatePreview="";
-  {
-    auto indexTableTemplateAsStringVector = getVectorStringFromFile(DBGWAS_lib + "/index_table_template.html");
-    for (const auto &line : indexTableTemplateAsStringVector)
-      templatePreview += line;
-  }
-
-  for (int i=0;i<numberOfComponents;i++) {
-    string idString = std::to_string(i);
-    string annotationsSQL=idComponent2Annotations[i].getSQLRepresentationForIndexPage();
-
-    //compute the number of nodes in this component and the number of significant nodes
-    int nbNodes = nodesInComponent[i].size();
-    int nbOfSignificantNodes = count_if(nodesInComponent[i].begin(), nodesInComponent[i].end(), [&](const MyVertex &node) {
-        return find(selectedUnitigs.begin(), selectedUnitigs.end(), newGraph[node].id) != selectedUnitigs.end();
-    });
-
-
-    //get the lowest qvalue of the nodes in the component
-    long double lowestQValue = std::numeric_limits<long double>::max();
-    for(const auto &node : nodesInComponent[i]) {
-      int id = newGraph[node].id;
-
-      //check if the patterns exists
-      if (unitigToPatternStats[id])
-        lowestQValue=min(lowestQValue, unitigToPatternStats[id]->qValue);
-    }
-
-    //add the true values to this preview
-    string thisPreview(templatePreview);
-    boost::replace_all(thisPreview, "<nb_unitigs>", to_string(nbNodes));
-    boost::replace_all(thisPreview, "<nb_sig_unitigs>", to_string(nbOfSignificantNodes));
-    boost::replace_all(thisPreview, "<id>", idString);
-
-    string lowestQValueAsStr;
-    {
-      stringstream ss;
-      ss << scientific;
-      ss << lowestQValue;
-      ss >> lowestQValueAsStr;
-    }
-    boost::replace_all(thisPreview, "<q-value>", lowestQValueAsStr);
-
-    string annotationsForHOT=idComponent2Annotations[i].getAnnotationsForHOTForIndexPage(i);
-
-    //add this preview to all previews
-    previews.push_back(ObjectPreview(i, lowestQValue, annotationsSQL, thisPreview, annotationsForHOT));
-  }
-
-
-  //output the object previews
-  stringstream ssPreview;
-  ssPreview << "[";
-  for (const auto &preview : previews)
-    ssPreview << preview.toJSObject() << ", ";
-  ssPreview << "]";
-
-  //create the index file
-  //read template file
-  string templatePath = DBGWAS_lib + "/index_template.html";
-  string indexOutput = readFileAsString(templatePath.c_str());
-
-
-  //put the command-line in the index page
-  string commandLineAsStr;
-  {
-    stringstream ss;
-
-    class PrintCommandLine : public IPropertiesVisitor {
-    private:
-        stringstream &ss;
-    public:
-        PrintCommandLine(stringstream &ss):ss(ss) {}
-
-        /** Called before the true visit of the IProperty instance. */
-        virtual void visitBegin    () {}
-
-        /** Visit of the IProperty instance.
-         * \param[in] prop : the instance to be visited.
-         */
-        virtual void visitProperty (IProperty* prop)  {
-          ss << prop->key;
-          if (prop->value.size())
-            ss << " = " << prop->value;
-          ss << endl;
-        }
-
-        /** Called after the true visit of the IProperty instance. */
-        virtual void visitEnd      () {}
-    };
-    PrintCommandLine printCommandLine(ss);
-    getInput()->accept(&printCommandLine);
-
-    commandLineAsStr = ss.str();
-  }
-  boost::replace_all(indexOutput, "<command_line>", commandLineAsStr);
-
-  //put the info in the template file
-  boost::replace_all(indexOutput, "<previews>", ssPreview.str());
-
-  //populate the annotation dropdown filter
-  {
-    set<string> allTags;
-    allTags.insert("No annotations found");
-    for (const auto &idComponent2AnnotationsPair : idComponent2Annotations) {
-      auto tagsOfThisComponent = idComponent2AnnotationsPair.second.getAnnotationIndexAsSet();
-      allTags.insert(tagsOfThisComponent.begin(), tagsOfThisComponent.end());
-    }
-
-    stringstream ss;
-    ss << "{";
-    for (const auto &tag : allTags)
-      ss << "'" << UNIQUE_SYMBOL_MARKER << tag << UNIQUE_SYMBOL_MARKER "' : '" << tag << "', ";
-    ss << "}";
-    boost::replace_all(indexOutput, "<all_tags_in_all_components>", ss.str());
-  }
-
-  //put the version on the index page
-  boost::replace_all(indexOutput, "<version>", VERSION);
-
-  //put the statistical figures in the output if the -newick parameter was given
-  if (hasNewickFile) {
-    boost::replace_all(indexOutput, "<stats_images_html>",
-        "    p-values of tested unitigs sorted by principal component (each unitig is associated with the closest PC):<br/>\n"
-        "    <img class=\"statImage\" src=\"components/stats/bugwas_out_SNPs_PC_manhattan.png\" /><br/><br/><br/>\n"
-        "    p-value of each principal component, whose association with the phenotype is tested using a Bayesian Wald test:<br/>\n"
-        "    <img class=\"statImage\" src=\"components/stats/bugwas_out_barplot_BayesianWald_PCs.png\" /><br/><br/><br/>\n"
-        "    Phylogenetic tree annotated with the principal components which were found significantly associated with the phenotype using a Bayesian Wald test:<br/>\n"
-        "    <img class=\"statImage\" src=\"components/stats/bugwas_out_tree_branchescolouredbyPC.png\" />");
-    boost::filesystem::create_directories(visualisationsFolder + string("/components/stats/"));
-    boost::filesystem::copy_file(step2OutputFolder + string("/bugwas_out_SNPs_PC_manhattan.png"), visualisationsFolder + string("/components/stats/bugwas_out_SNPs_PC_manhattan.png"));
-    boost::filesystem::copy_file(step2OutputFolder + string("/bugwas_out_barplot_BayesianWald_PCs.png"), visualisationsFolder + string("/components/stats/bugwas_out_barplot_BayesianWald_PCs.png"));
-    boost::filesystem::copy_file(step2OutputFolder + string("/bugwas_out_tree_branchescolouredbyPC.png"), visualisationsFolder + string("/components/stats/bugwas_out_tree_branchescolouredbyPC.png"));
-  }else {
-    boost::replace_all(indexOutput, "<stats_images_html>", "Re-run DBGWAS with a newick tree file (-newick parameter) to view figures on lineage effect.");
-  }
-
-  //output the file
-  ofstream indexFile;
-  openFileForWriting(visualisationsFolder+string("/index.html"), indexFile);
-  indexFile << indexOutput;
-  indexFile.close();
-  cerr << "[Creating index file...] - Done!" << endl;
-}
-
-
-void generate_output::generateCytoscapeOutput(const graph_t &graph, const vector<MyVertex> &nodes, const string &typeOfGraph, int i,
-                             const string &tmpFolder, const string &visualisationsFolder, const vector<int> &selectedUnitigs, int nbPheno0, int nbPheno1,
-                             map<int, AnnotationRecord > &idComponent2Annotations,
-                             int nbCores) {
-  cerr << "Rendering " << typeOfGraph << "_" << i << "..." << endl;
-
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //Annotation step
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //some indexes to help gathering info later
-  AnnotationRecord annotationsOfThisComponent; //will store all the annotations in this component
-
-
-  if (thereIsNucleotideDB || thereIsProteinDB) {
-    cerr << "Annotating..." << endl;
-
-    //create the input for blast
-    string blastInputPath;
-    {
-      stringstream blastInputPathSS;
-      blastInputPathSS << tmpFolder << "/nodes_comp_" << i << ".fasta";
-      blastInputPath = blastInputPathSS.str();
-    }
-
-    //create a file containing all unitigs in this component
-    {
-      ofstream blastInputFile;
-      openFileForWriting(blastInputPath, blastInputFile);
-      for (const auto &node : nodes)
-        blastInputFile << ">" << node << endl << graph[node].name << endl;
-      blastInputFile.close();
-    }
-
-    //execute the blast
-    vector <BlastRecord> records;
-    if (thereIsNucleotideDB) {
-      vector <BlastRecord> blastnRecords = Blast::blast("blastn", blastInputPath, nucleotideDBPath, nbCores);
-      records.insert(records.end(), blastnRecords.begin(), blastnRecords.end());
-    }
-    if (thereIsProteinDB) {
-      vector <BlastRecord> blastxRecords = Blast::blast("blastx", blastInputPath, proteinDBPath, nbCores);
-      records.insert(records.end(), blastxRecords.begin(), blastxRecords.end());
-    }
-
-    //populate annotationsOfThisComponent
-    for (const auto &record : records) {
-      //here I have to use graph[v].id instead of simply record.nodeId because the original IDs of the node is used later
-      MyVertex v = vertex(record.nodeId, graph);
-      annotationsOfThisComponent.addAnnotation(record.DBGWAS_tags.at("specific"), graph[v].id, record.evalue, &record);
-    }
-
-    //populate idComponent2Annotations[i]
-    for (const auto &record : records) {
-      //here I have to use graph[v].id instead of simply record.nodeId because the original IDs of the node is used later
-      MyVertex v = vertex(record.nodeId, graph);
-      idComponent2Annotations[i].addAnnotation(record.DBGWAS_tags.at("general"), graph[v].id, record.evalue);
-    }
-
-    cerr << "Annotating... - Done!" << endl;
-  }else {
-    cerr << "Skipping annotation step - no DB provided" << endl;
-  }
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //Annotation step
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //Cytoscape graph build step
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  cerr << "Building Cytoscape graph..." << endl;
-
-  //gets the maxCoverage of the nodes in this component - will be used to normalize the width and height of the nodes
-  int maxCoverage=-1;
-  for (const auto &node : nodes) {
-    maxCoverage = max(maxCoverage, graph[node].phenoCounter.getTotal());
-  }
-
-
-  //declares the stringstream which will store the elements to be printed
-  stringstream elementsSS;
-  {
-    elementsSS << scientific; //scientific notation for double
-
-    //goes through the nodes and print them
-    set<MyVertex> verticesInThisComponent; //keep track of the vertices in this component
-    for (const auto &node : nodes) {
-      verticesInThisComponent.insert(node);
-
-      //print the node with the full data
-      elementsSS << "{data: {id: 'n" << graph[node].id << "'" <<
-      ", name: '" << graph[node].name << "'" <<
-      ", sequenceLength: '" << graph[node].name.length() << "'" <<
-      ", info: '" << graph[node].id << "'" <<
-      ", total: '" << graph[node].phenoCounter.getTotal() << "'" <<
-      ", annotations: " << annotationsOfThisComponent.getAllAnnotationsIDsFromANodeAsJSVector(graph[node].id) <<
-      ", pheno0: '" << graph[node].phenoCounter.getPheno0() << "/" << nbPheno0 << "'" <<
-      ", pheno1: '" << graph[node].phenoCounter.getPheno1() << "/" << nbPheno1 << "'" <<
-      ", NA: '" << graph[node].phenoCounter.getNA() << "'" <<
-      ", significant: '" << (find(selectedUnitigs.begin(), selectedUnitigs.end(), graph[node].id) == selectedUnitigs.end() ? "No" : "Yes") << "'" <<
-      ", qValue: '" << graph[node].unitigStats.getQValueAsStr() << "'" <<
-      ", weight: '" << graph[node].unitigStats.getWeightAsStr() << "'" <<
-      ", waldStatistic: '" << graph[node].unitigStats.getWaldStatisticAsStr() << "'" <<
-      ", background_color: rgbToHex(" << graph[node].unitigStats.getRGB() << ")" <<
-      ", width: " << (minSize + (((double) graph[node].phenoCounter.getTotal()) / maxCoverage * (maxSize - minSize))) <<
-      ", height: " << (minSize + (((double) graph[node].phenoCounter.getTotal()) / maxCoverage * (maxSize - minSize))) <<
-      ", transparency: " <<
-      (find(selectedUnitigs.begin(), selectedUnitigs.end(), graph[node].id) == selectedUnitigs.end() ? "76" : "255") <<
-
-      //we print the style before in order to be able to export to Cytoscape Desktop
-      "}, style: {'background-color': rgbToHex(" << graph[node].unitigStats.getRGB() << ")" <<
-      ", 'width': " << (minSize + (((double) graph[node].phenoCounter.getTotal()) / maxCoverage * (maxSize - minSize))) <<
-      ", 'height': " << (minSize + (((double) graph[node].phenoCounter.getTotal()) / maxCoverage * (maxSize - minSize))) <<
-      //if it is not a selected unitig, then it becomes a little bit transparent
-      (find(selectedUnitigs.begin(), selectedUnitigs.end(), graph[node].id) == selectedUnitigs.end()
-       ? ", 'background-opacity': 0.3" : "") <<
-      "}}, ";
-    }
-
-    //goes through the edges and print them
-    for (auto ep = edges(graph); ep.first != ep.second; ++ep.first) {
-      MyEdge e = *ep.first;
-      //check if the edge is in this component
-      if (verticesInThisComponent.find(source(e, graph)) != verticesInThisComponent.end() &&
-          verticesInThisComponent.find(target(e, graph)) != verticesInThisComponent.end()) {
-        //output edge
-        elementsSS << "{data: {id: 'e" << graph[e].id << "', source: 'n" << graph[source(e, graph)].id
-        << "', target: 'n" << graph[target(e, graph)].id << "'}}, ";
-      }
-    }
-  }
-
-  //this is what should replace <elementsTag>
-  string elements = elementsSS.str();
-
-
-
-  //create the graph file
-  //read template file
-  string templatePath = DBGWAS_lib + "/cytoscape_template.html";
-  string cytoscapeOutput = readFileAsString(templatePath.c_str());
-
-  //put the graph in the template file
-  boost::replace_all(cytoscapeOutput, "<elementsTag>", elements);
-
-  //put the annotation names in the template file
-  boost::replace_all(cytoscapeOutput, "<allAnnotationsTag>", annotationsOfThisComponent.getAnnotationIndexAsJSVector());
-
-  //put the annotation info into the template file
-  boost::replace_all(cytoscapeOutput, "<componentAnnotationTag>", annotationsOfThisComponent.getJSRepresentationAnnotIdAnnotInfoGraphPage());
-
-  //put the node2AnnotationEvalue info into the template file
-  boost::replace_all(cytoscapeOutput, "<node2AnnotationEvalueTag>", annotationsOfThisComponent.getJSRepresentationNodeId2AnnotationsEvalueForGraphPage());
-
-  //put the annotation2Nodes info into the template file
-  boost::replace_all(cytoscapeOutput, "<annotation2NodesParTag>", annotationsOfThisComponent.getJSRepresentationAnnotation2NodesForGraphPage());
-
-  //put the extraTags info into the template file
-  boost::replace_all(cytoscapeOutput, "<extraTagsPar>", annotationsOfThisComponent.getExtraTagsAsJSVector());
-
-  //output the file
-  string outfilename;
-  {
-    stringstream ss;
-    ss << visualisationsFolder << "/components/" << typeOfGraph << "_" << i << ".html";
-    outfilename=ss.str();
-  }
-  ofstream outFile;
-  openFileForWriting(outfilename, outFile);
-  outFile << cytoscapeOutput;
-  outFile.close();
-
-
-  //copy the lib folder, if it is not already copied
-  string fromLibPath = DBGWAS_lib + "/lib";
-  string toLibPath = visualisationsFolder + "/components/lib";
-  if (!boost::filesystem::exists(toLibPath))
-    copyDirectoryRecursively(fromLibPath, toLibPath);
-  cerr << "Building Cytoscape graph... - Done!" << endl;
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //Cytoscape graph build step
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  cerr << "Rendering " << typeOfGraph << "_" << i << "... - Done!" << endl;
-}
-
 void generate_output::execute () {
 
   checkParametersGenerateOutput(this);
-  if (run1) return;
 
-  int neighbourhood = getInput()->getInt(STR_MAX_NEIGHBOURHOOD);
   string outputFolderParameter = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT));
   string outputFolder = outputFolderParameter+string("/step3");
   string tmpFolder = outputFolder+string("/tmp");
-  string visualisationsFolder = outputFolderParameter+string("/visualisations");
   string step1OutputFolder = outputFolderParameter+string("/step1");
   string step2OutputFolder = outputFolderParameter+string("/step2");
   int nbCores = getInput()->getInt(STR_NBCORES);
@@ -456,6 +74,7 @@ void generate_output::execute () {
 
   cerr << "[Getting the significant unitigs from the patterns...]" << endl;
 
+  /*
   //read the patterns
   auto sortedPatterns = PatternFromStats::readFile(step2OutputFolder + "/patterns.txt", true);
 
@@ -639,7 +258,7 @@ void generate_output::execute () {
   }
   cerr << "[Computing nodes' neighbourhoods...] - Done!" << endl;
 
-
+  /
 
   cerr << "[Generating the visualisation files...]" << endl;
   //print one graph per component
@@ -671,20 +290,11 @@ void generate_output::execute () {
   }
 
   cerr << "[Generating the visualisation files...] - Done!" << endl;
-
-
-  //create the index
-  createIndexFile(numberOfComponents, visualisationsFolder, step2OutputFolder, nodesInComponent, newGraph,
-                  idComponent2Annotations, unitigToPatternStats, selectedUnitigs, nbCores);
+*/
 
   //clean-up - saving some disk space
   //remove temp directory
   boost::filesystem::remove_all(tmpFolder);
 
-  //tell we are done
-  cout << endl << endl <<
-      "******************************************************************************" << endl <<
-      "We are done. The output can be found at " << visualisationsFolder << "/index.html" << endl <<
-      "******************************************************************************" << endl << endl;
   cout.flush();
 }

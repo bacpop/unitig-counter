@@ -24,6 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 #ifndef KSGATB_GENERATE_OUPUT_H
@@ -47,8 +48,6 @@
 #include <cstdlib>
 
 #include "global.h"
-#include "PhenoCounter.h"
-#include "Blast.h"
 
 
 using namespace std;
@@ -58,7 +57,6 @@ private:
     long double qValue;
     long double weight;
     long double normalizedWeight;
-    string waldStatistic;
     bool valid;
 public:
     UnitigStats():valid(false){} //default constructor
@@ -67,7 +65,6 @@ public:
             this->qValue = patternStat->qValue;
             this->weight = patternStat->weight * weightCorretion;
             this->normalizedWeight = (weightCorretion == 1 ? patternStat->normalizedWeight : (1 - patternStat->normalizedWeight));
-            this->waldStatistic = patternStat->waldStatistic;
             valid = true;
         }else{
             valid=false; //not valid
@@ -97,25 +94,6 @@ public:
         }
     }
 
-    string getRGB() const {
-        stringstream ss;
-        if (valid) {
-            ss <<
-            ((int) (normalizedWeight * 255)) << ",0," <<
-            ((int) ((1 - normalizedWeight) * 255));
-            return ss.str();
-        } else {
-            return string("128,128,128");//no stats, grey color
-        }
-    }
-
-    string getWaldStatisticAsStr() const {
-        if (valid) {
-            return waldStatistic;
-        } else {
-            return string("NA");
-        }
-    }
 };
 
 //vertex informations
@@ -123,7 +101,6 @@ struct VertexInfo {
     string name; //probably represent this as (unitig id, pos)
     int id; //do not use unsigned values
     char strand;
-    PhenoCounter phenoCounter;
     UnitigStats unitigStats;
 };
 
@@ -167,27 +144,6 @@ public:
             verticesReachableByTheSourceWithinMaxDistance.insert(v);
     }
 };
-
-
-class ObjectPreview {
-private:
-    int id;
-    double qvalue;
-    string annotationsConcatenated;
-    string preview;
-    string annotationsForHOT;
-public:
-    ObjectPreview(int id, double qvalue, const string &annotationsConcatenated, const string &preview, const string &annotationsForHOT):
-        id(id), qvalue(qvalue), annotationsConcatenated(annotationsConcatenated), preview(preview), annotationsForHOT(annotationsForHOT){}
-
-    string toJSObject () const {
-        stringstream ss;
-        ss << "{id: " << id << ",\nqvalue: " << qvalue << ",\nannCat: '" << annotationsConcatenated << "',\npreview: '" << preview << "'"
-        << ",\nannHOT: " << annotationsForHOT << "}\n";
-        return ss.str();
-    }
-};
-
 
 class GraphWriter {
 public:
@@ -246,14 +202,7 @@ public:
             std::exit(1);
         return toReturn;
     }
-private:
-    void generateCytoscapeOutput(const graph_t &graph, const vector<MyVertex> &nodes, const string &typeOfGraph, int i,
-                                 const string &tmpFolder, const string &visualisationsFolder, const vector<int> &selectedUnitigs, int nbPheno0, int nbPheno1,
-                                 map<int, AnnotationRecord > &idComponent2Annotations,
-                                 int nbCores);
-    void createIndexFile(int numberOfComponents, const string &visualisationsFolder, const string &step2OutputFolder, const vector<vector<MyVertex> > &nodesInComponent, graph_t& newGraph,
-                         map<int, AnnotationRecord > &idComponent2Annotations, const vector<const PatternFromStats*> &unitigToPatternStats,
-                         const vector<int> &selectedUnitigs, int nbCores);
+
 };
 
 

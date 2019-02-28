@@ -24,6 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 #include "build_dbg.hpp"
@@ -43,7 +44,7 @@ using namespace std;
 *********************************************************************/
 // The Tool constructor allows to give a name to our tool.
 // This name appears when one gets help in the command line or in the final output
-build_dbg::build_dbg ()  : Tool ("build_dbg") //give a name to our tool
+build_dbg::build_dbg ()  : Tool ("unitig-counter") //give a name to our tool
 {
     setVersion([](void* whatever) {
         cout << "unitig-counter v" << VERSION << endl;
@@ -239,9 +240,8 @@ public:
 *********************************************************************/
 void build_dbg::execute ()
 {
-    cerr << "Step 1. Building DBG and mapping strains on the DBG..." << endl;
+    cerr << "Building DBG and mapping strains on the DBG..." << endl;
     checkParametersBuildDBG(this);
-    if (run2) return;
 
     //get the parameters
     int kmerSize = getInput()->getInt(STR_KSKMER_SIZE);
@@ -268,7 +268,7 @@ void build_dbg::execute ()
 
     //Builds the DBG using GATB
     //TODO: by using create() and assigning to a Graph object, the copy constructor does a shallow or deep copy??
-    graph = gatb::core::debruijn::impl::Graph::createAsPointer("-in %s -kmer-size %d -abundance-min 0 -out %s/graph -nb-cores %d",
+    *graph = gatb::core::debruijn::impl::Graph::create("-in %s -kmer-size %d -abundance-min 0 -out %s/graph -nb-cores %d",
                                                           readsFile.c_str(), kmerSize, outputFolder.c_str(), nbCores);
 
 

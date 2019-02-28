@@ -24,6 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
+## Modified by John Lees
 */
 
 #include <unordered_map>
@@ -37,7 +38,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <boost/regex.hpp>
-#include <assert.h> 
+#include <assert.h>
 #include <gatb/gatb_core.hpp>
 
 
@@ -164,8 +165,8 @@ public:
 
 
     /************************************************************************************************************************/
-    /*      construct node file and edge file for graph file                            */
-    /*                                                          */
+    /*      construct node file and edge file for graph file                                                                */
+    /*                                                                                                                      */
     /************************************************************************************************************************/
     void construct_graph(string linear_seqs_name)
     {
@@ -229,7 +230,7 @@ public:
                 //Replaced the preceding by:
                 if (cur_node ==idNodes) // prevent self loops on same kmer
                     continue;
-                
+
                 string label = "R";
 
                 if (cur_left_or_right == LEFT)
@@ -275,7 +276,7 @@ public:
                     */
                     //DEBUG
                 }
-                
+
             }
 
             // right edges
@@ -358,7 +359,7 @@ public:
             //increase unitig id
             idNodes++;
         }
-    }    
+    }
 };
 #endif //_GRAPHOUTPUT_H
 

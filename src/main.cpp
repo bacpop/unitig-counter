@@ -30,7 +30,6 @@
 // We include the header file for the tool
 #include "build_dbg.hpp"
 #include "map_reads.hpp"
-#include "statistical_test.h"
 #include "generate_output.h"
 #include "global.h"
 #include "Utils.h"
@@ -55,12 +54,6 @@ int main (int argc, char* argv[])
         build_dbg().run(argc, argv); //this call will set up graph and nodeIdToUnitigId
         map_reads().run(argc, argv);
         cerr << "Done!" << endl;
-
-        //Find the neighbourhood around significant unitigs...
-        // This may be useful for short unitigs
-        //cerr << "Step 3. Building visualisation around significant unitigs..." << endl;
-        //generate_output().run(argc, argv);
-        //cerr << "Done!" << endl;
     }
     catch (Exception& e)
     {
