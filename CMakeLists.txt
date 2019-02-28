@@ -51,7 +51,12 @@ SET (GATB_CORE_EXCLUDE_TESTS     1)
 SET (GATB_CORE_EXCLUDE_EXAMPLES  1)
 
 # this stops the boost in gatb-core/thirdparty being used
-file(RENAME ${GATB_CORE_HOME}/thirdparty/boost ${GATB_CORE_HOME}/thirdparty/boost-old)
+if(EXISTS ${GATB_CORE_HOME}/thirdparty/boost)
+    file(RENAME ${GATB_CORE_HOME}/thirdparty/boost ${GATB_CORE_HOME}/thirdparty/boost-old)
+endif()
+execute_process(COMMAND pushd ${GATB_CORE_HOME})
+execute_process(COMMAND git apply ${PROJECT_SOURCE_DIR}/0001-Fix-for-boost-include-dir.patch)
+execute_process(COMMAND popd)
 
 # GATB CORE
 include (GatbCore)
