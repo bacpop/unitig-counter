@@ -318,7 +318,7 @@ void generatePyseerInput (const vector <string> &allReadFilesNames,
 void map_reads::execute ()
 {
     //get the parameters
-    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/step1");
+    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/unitig-counter");
     string tmpFolder = outputFolder+string("/tmp");
     string longReadsFile = tmpFolder+string("/readsFile");
     int nbCores = getInput()->getInt(STR_NBCORES);

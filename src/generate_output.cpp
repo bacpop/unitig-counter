@@ -64,7 +64,7 @@ void generate_output::execute () {
   string outputFolderParameter = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT));
   string outputFolder = outputFolderParameter+string("/step3");
   string tmpFolder = outputFolder+string("/tmp");
-  string step1OutputFolder = outputFolderParameter+string("/step1");
+  string step1OutputFolder = outputFolderParameter+string("/unitig-graph");
   string step2OutputFolder = outputFolderParameter+string("/step2");
   int nbCores = getInput()->getInt(STR_NBCORES);
 

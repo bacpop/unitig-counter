@@ -194,11 +194,6 @@ int getNbLinesInFile(const string &filename) {
 
 
 void checkParametersBuildDBG(Tool *tool) {
-  //check if we skip or not
-  run1 = tool->getInput()->get(STR_RUN1) != 0;
-  run2 = tool->getInput()->get(STR_RUN2) != 0;
-
-  if (run2) run1=false;
 
   //check the count mode
   //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
@@ -247,36 +242,6 @@ void checkParametersGenerateOutput(Tool *tool) {
   createFolder(visPath.string());
   visPath /= "components";
   createFolder(visPath.string());
-
-
-  //parse and get SFF
-  string SFFString = tool->getInput()->getStr(STR_SFF);
-  if (SFFString.find(".")==string::npos) {
-    //. not found in SFFString : integer
-    //get the first n significant patterns
-    int n;
-    {
-      stringstream ss;
-      ss << SFFString;
-      ss >> n;
-      if (ss.fail())
-        fatalError(string("Error on ") + string(STR_SFF) + " parameter. It must be an integer or a double.");
-    }
-
-    SFF=n;
-  }else {
-    //double
-    //get all sequence in which the q-value is <= n
-    double n;
-    {
-      stringstream ss;
-      ss << SFFString;
-      ss >> n;
-      if (ss.fail())
-        fatalError(string("Error on ") + string(STR_SFF) + " parameter. It must be an integer or a double.");
-    }
-    SFF = n;
-  }
 
 }
 
