@@ -35,7 +35,7 @@
 #define UNIQUE_SYMBOL_MARKER "#@#-322"
 
 //global vars
-extern Graph* graph;
+extern Graph graph;
 extern vector< UnitigIdStrandPos >* nodeIdToUnitigId;
 extern vector< Strain >* strains;
 extern const char* STR_STRAINS_FILE;

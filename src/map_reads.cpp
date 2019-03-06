@@ -318,7 +318,7 @@ void generatePyseerInput (const vector <string> &allReadFilesNames,
 void map_reads::execute ()
 {
     //get the parameters
-    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/unitig-counter");
+    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/unitigs");
     string tmpFolder = outputFolder+string("/tmp");
     string longReadsFile = tmpFolder+string("/readsFile");
     int nbCores = getInput()->getInt(STR_NBCORES);
@@ -347,14 +347,14 @@ void map_reads::execute ()
     // We iterate the range.  NOTE: we could also use lambda expression (easing the code readability)
     uint64_t nbOfReadsProcessed = 0;
     dispatcher.iterate(allReadFilesNamesIt,
-                       MapAndPhase(allReadFilesNames, *graph, outputFolder, tmpFolder, nbOfReadsProcessed, synchro,
+                       MapAndPhase(allReadFilesNames, graph, outputFolder, tmpFolder, nbOfReadsProcessed, synchro,
                                    *nodeIdToUnitigId, nbContigs));
 
     //generate the bugwas input
     generatePyseerInput(allReadFilesNames, outputFolder, tmpFolder, nbContigs);
 
     //after the mapping, free some memory that will not be needed anymore
-    delete graph;
+    graph.~Graph();
     delete nodeIdToUnitigId;
 
     //clean-up - saving some disk space

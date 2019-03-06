@@ -46,7 +46,7 @@ string DBGWAS_lib = ""; //set on first command in main.cpp
 bool presenceAbsenceCountMode = false;
 
 //global vars used by both programs
-Graph* graph;
+Graph graph;
 vector< UnitigIdStrandPos >* nodeIdToUnitigId;
 vector< Strain >* strains = NULL;
 
