@@ -195,17 +195,6 @@ int getNbLinesInFile(const string &filename) {
 
 void checkParametersBuildDBG(Tool *tool) {
 
-  //check the count mode
-  //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
-  /*
-  string countMode = tool->getInput()->getStr(STR_COUNT_MODE);
-  if (countMode!="01" && countMode!="Freq") {
-    stringstream ss;
-    ss << "Wrong value for parameter " << STR_COUNT_MODE << ". Value found: " << countMode << " . Values accepted: 01 or Freq.";
-    fatalError(ss.str());
-  }
-   */
-
   //check the strains file
   string strainsFile = tool->getInput()->getStr(STR_STRAINS_FILE);
   checkStrainsFile(strainsFile);
@@ -215,7 +204,7 @@ void checkParametersBuildDBG(Tool *tool) {
   boost::filesystem::path p(outputFolderPath.c_str());
   if (boost::filesystem::exists(p)) {
     stringstream ss;
-    ss << "Could not create dir " << outputFolderPath << " - path already exists. Remove it and re-run the tool, or use -skip1 or -skip2 parameters.";
+    ss << "Could not create dir " << outputFolderPath << " - path already exists. Remove it and re-run the tool.";
     fatalError(ss.str());
   }
   createFolder(p.string());

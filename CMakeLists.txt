@@ -8,8 +8,8 @@ set (CMAKE_CXX_STANDARD 11)
 ################################################################################
 # The version number.
 ################################################################################
-SET (gatb-tool_VERSION_MAJOR 0)
-SET (gatb-tool_VERSION_MINOR 1)
+SET (gatb-tool_VERSION_MAJOR 1)
+SET (gatb-tool_VERSION_MINOR 0)
 SET (gatb-tool_VERSION_PATCH 0)
 
 #write the version number
@@ -54,9 +54,8 @@ SET (GATB_CORE_EXCLUDE_EXAMPLES  1)
 if(EXISTS ${GATB_CORE_HOME}/thirdparty/boost)
     file(RENAME ${GATB_CORE_HOME}/thirdparty/boost ${GATB_CORE_HOME}/thirdparty/boost-old)
 endif()
-execute_process(COMMAND pushd ${GATB_CORE_HOME})
-execute_process(COMMAND git apply ${PROJECT_SOURCE_DIR}/0001-Fix-for-boost-include-dir.patch)
-execute_process(COMMAND popd)
+execute_process(COMMAND git apply ${PROJECT_SOURCE_DIR}/0001-Fix-for-boost-include-dir.patch
+                WORKING_DIRECTORY ${GATB_CORE_HOME})
 
 # GATB CORE
 include (GatbCore)

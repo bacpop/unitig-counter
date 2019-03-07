@@ -32,8 +32,6 @@
 #include <gatb/gatb_core.hpp>
 #include "Utils.h"
 
-#define UNIQUE_SYMBOL_MARKER "#@#-322"
-
 //global vars
 extern Graph graph;
 extern vector< UnitigIdStrandPos >* nodeIdToUnitigId;
@@ -42,13 +40,6 @@ extern const char* STR_STRAINS_FILE;
 extern const char* STR_KSKMER_SIZE;
 extern const char* STR_OUTPUT;
 extern const char* STR_NBCORES;
-extern const char* STR_MAF_FILTER;
-
-//TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
-//extern const char* STR_COUNT_MODE;
-//TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
-extern string DBGWAS_lib;
-extern bool presenceAbsenceCountMode;
 
 void populateParser (Tool *tool);
 

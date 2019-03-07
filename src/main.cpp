@@ -30,7 +30,6 @@
 // We include the header file for the tool
 #include "build_dbg.hpp"
 #include "map_reads.hpp"
-#include "generate_output.h"
 #include "global.h"
 #include "Utils.h"
 #include <stdlib.h>
@@ -51,16 +50,16 @@ int main (int argc, char* argv[])
     try
     {
         //Build DBG
-        build_dbg().run(argc, argv); //this call will set up graph and nodeIdToUnitigId
+        build_dbg().run(argc, argv);
         map_reads().run(argc, argv);
         cerr << "Done!" << endl;
     }
     catch (Exception& e)
     {
         std::cerr << "EXCEPTION: " << e.getMessage() << std::endl;
-        return EXIT_FAILURE;
+        return 1;
     }
 
-    return EXIT_SUCCESS;
+    return 0;
 }
 

@@ -15,3 +15,19 @@ Jaillard M., Lima L. et al. A fast and agnostic method for bacterial genome-wide
 * Removes all code for `step2` and `step3` in DBGWAS.
 * Remove unused depencencies.
 * Change installation procedure ready for bioconda.
+
+## Usage
+Run:
+```
+./unitig-counter -strains strain_list.txt -output output -nb-cores 4
+```
+
+Where `strain_list.txt` is a list of input files (assemblies) with a header, for example:
+```
+ID      Path
+6925_1_49       assemblies/6925_1#49.contigs_velvet.fa
+6925_1_50       assemblies/6925_1#50.contigs_velvet.fa
+```
+
+Output is in `output/unitigs.txt` and can be used with `--kmers` in pyseer. You can also test just the
+unique patterns in `output/unitigs.unique_rows.txt` with the `--Rtab` option.

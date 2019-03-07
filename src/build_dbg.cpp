@@ -246,14 +246,8 @@ void build_dbg::execute ()
     //get the parameters
     int kmerSize = getInput()->getInt(STR_KSKMER_SIZE);
 
-    //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
-    //string countMode = getInput()->getStr(STR_COUNT_MODE);
-    //presenceAbsenceCountMode = (countMode=="01");
-    presenceAbsenceCountMode = true;
-    //TODO: seeveral questions are still unclear if we use the Freq count mode (how to run bugwas, the coloring, etc...). For now I am disabling this option
-
-    //create the step1 folder in the outputfolder
-    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/unitigs");
+     //create the step1 folder in the outputfolder
+    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT));
     createFolder(outputFolder);
 
     //create the tmp folder of step1

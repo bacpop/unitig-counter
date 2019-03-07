@@ -156,7 +156,7 @@ struct MapAndPhase
             if (unitigIdToCount.find(i) == unitigIdToCount.end() )
                 mappingOutputFile << "0 ";
             else
-                mappingOutputFile << (presenceAbsenceCountMode ? 1 : unitigIdToCount[i]) << " ";
+                mappingOutputFile << "1 ";
         }
 
         mappingOutputFile.close();
@@ -212,7 +212,7 @@ void generate_XU(const string &filename, const string &nodesFile, const vector< 
     for (int i=0;i<XU.size();i++) {
         // print the unitig sequence
         nodesFileReader >> id >> seq;
-        XUFile << seq << " | ";
+        XUFile << seq << " |";
 
         //print the strains present
         for (int j=0;j<XU[i].size();j++)
@@ -299,7 +299,7 @@ void generatePyseerInput (const vector <string> &allReadFilesNames,
         generate_XU(outputFolder+string("/unitigs.txt"), outputFolder+string("/graph.nodes"), XU);
         map< vector<int>, vector<int> > pattern2Unitigs = getUnitigsWithSamePattern(XU, nbContigs);
         generate_unique_id_to_original_ids(outputFolder+string("/unitigs.unique_rows_to_all_rows.txt"), pattern2Unitigs);
-        generate_XU_unique(outputFolder+string("/unitigs.unique_rows.txt"), XU, pattern2Unitigs);
+        generate_XU_unique(outputFolder+string("/unitigs.unique_rows.Rtab"), XU, pattern2Unitigs);
     }
 
     cerr << "[Generating pyseer input] - Done!" << endl;
@@ -318,7 +318,7 @@ void generatePyseerInput (const vector <string> &allReadFilesNames,
 void map_reads::execute ()
 {
     //get the parameters
-    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT))+string("/unitigs");
+    string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT));
     string tmpFolder = outputFolder+string("/tmp");
     string longReadsFile = tmpFolder+string("/readsFile");
     int nbCores = getInput()->getInt(STR_NBCORES);
@@ -350,7 +350,9 @@ void map_reads::execute ()
                        MapAndPhase(allReadFilesNames, graph, outputFolder, tmpFolder, nbOfReadsProcessed, synchro,
                                    *nodeIdToUnitigId, nbContigs));
 
-    //generate the bugwas input
+    cerr << endl << "[Mapping process finished!]" << endl;
+
+    //generate the pyseer input
     generatePyseerInput(allReadFilesNames, outputFolder, tmpFolder, nbContigs);
 
     //after the mapping, free some memory that will not be needed anymore
@@ -363,6 +365,5 @@ void map_reads::execute ()
     //remove GATB's graph file
     remove((outputFolder+string("/graph.h5")).c_str());
 
-    cerr << endl << "[Mapping process finished!]" << endl;
     cerr.flush();
 }
