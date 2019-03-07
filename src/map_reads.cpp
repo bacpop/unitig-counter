@@ -59,8 +59,6 @@ void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector<
                 continue;
             }
 
-
-
             //build the node
             Node node = graph.buildNode(LRKmer.c_str());
 
@@ -163,16 +161,6 @@ struct MapAndPhase
     }
 };
 
-/*********************************************************************
-** METHOD  :
-** PURPOSE :
-** INPUT   :
-** OUTPUT  :
-** RETURN  :
-** REMARKS :
-*********************************************************************/
-// The Tool constructor allows to give a name to our tool.
-// This name appears when one gets help in the command line or in the final output
 map_reads::map_reads ()  : Tool ("map_reads") //give a name to our tool
 {
     populateParser(this);
@@ -307,14 +295,6 @@ void generatePyseerInput (const vector <string> &allReadFilesNames,
 
 }
 
-/*********************************************************************
-** METHOD  :
-** PURPOSE :
-** INPUT   :
-** OUTPUT  :
-** RETURN  :
-** REMARKS :
-*********************************************************************/
 void map_reads::execute ()
 {
     //get the parameters
@@ -355,15 +335,16 @@ void map_reads::execute ()
     //generate the pyseer input
     generatePyseerInput(allReadFilesNames, outputFolder, tmpFolder, nbContigs);
 
+    cout << "Number of unique patterns: " << getNbLinesInFile(outputFolder+string("/unitigs.unique_rows.txt")) << endl;
+
     //after the mapping, free some memory that will not be needed anymore
+    //(...don't really need to do this as this is the end)
     graph.~Graph();
     delete nodeIdToUnitigId;
 
     //clean-up - saving some disk space
     //remove temp directory
     boost::filesystem::remove_all(tmpFolder);
-    //remove GATB's graph file
-    remove((outputFolder+string("/graph.h5")).c_str());
 
     cerr.flush();
 }
