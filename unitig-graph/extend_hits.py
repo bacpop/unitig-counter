@@ -54,7 +54,7 @@ def main():
                 node_list.append((int(node_id), dict(seq=node_seq, seq_len=len(node_seq))))
                 unitig_ids[node_seq] = node_id
 
-        G = nx.DiGraph()
+        G = nx.Graph()
         G.add_nodes_from(node_list)
 
         # add edges
@@ -63,10 +63,9 @@ def main():
             for edge in edge_file:
                 (start, end, label) = edge.rstrip().split("\t")
 
-                edge_list.append((int(start), int(end), G.nodes[int(end)]['seq_len']))
-                edge_list.append((int(end), int(start), G.nodes[int(start)]['seq_len']))
+                edge_list.append((int(start), int(end)))
 
-        G.add_weighted_edges_from(edge_list)
+        G.add_edges_from(edge_list)
 
         if args.save_graph:
             nx.write_gpickle(G, args.save_graph + ".gpickle")
@@ -75,6 +74,16 @@ def main():
         G = nx.read_gpickle(args.load_graph)
         for (node_id, node_data) in G.nodes(data=True):
             unitig_ids[node_data['seq']] = str(node_id)
+
+    def paths_from_node(i, length):
+        # find all paths from node i for sequences length or shorter
+        # returns a list of paths (i.e. a list of lists)
+        ans = [[i]]
+        for j in G.neighbors(i):
+            if length - G.nodes[j]['seq_len'] >= 0:
+                for path in paths_from_node(j, length - G.nodes[j]['seq_len']):
+                    ans.append([i] + path)
+        return ans
 
     # extend each unitig
     sys.stderr.write("Extending unitigs\n")
