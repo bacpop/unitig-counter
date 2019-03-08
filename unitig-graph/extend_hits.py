@@ -7,6 +7,34 @@ import networkx as nx
 
 __version__ = "1.0.0"
 
+def walk_enumeration(G, start_node, length, repeats=False):
+    """Recursively find all paths from node i for sequences length or shorter
+    Returns a list of paths (i.e. a list of lists)
+
+    Args:
+        G (nx.Graph)
+            Graph to find paths in
+        node_id (int)
+            Node to find paths through
+        length (int)
+            Maximum path length
+        repeats (bool)
+            Whether to allow paths with repeated node visits
+
+            [default = False]
+
+    Returns:
+        path_list (list)
+            List of paths
+    """
+    path_list = [[start_node]]
+    for neighbour in G.neighbors(start_node):
+        if length - G.nodes[neighbour]['seq_len'] >= 0:
+            for path in walk_enumeration(G, neighbour, length - G.nodes[neighbour]['seq_len'], repeats):
+                if repeats or start_node not in path:
+                    path_list.append([start_node] + path)
+    return path_list
+
 def get_options():
 
     import argparse
@@ -75,24 +103,14 @@ def main():
         for (node_id, node_data) in G.nodes(data=True):
             unitig_ids[node_data['seq']] = str(node_id)
 
-    def paths_from_node(i, length):
-        # find all paths from node i for sequences length or shorter
-        # returns a list of paths (i.e. a list of lists)
-        ans = [[i]]
-        for j in G.neighbors(i):
-            if length - G.nodes[j]['seq_len'] >= 0:
-                for path in paths_from_node(j, length - G.nodes[j]['seq_len']):
-                    ans.append([i] + path)
-        return ans
-
     # extend each unitig
     sys.stderr.write("Extending unitigs\n")
     with open(args.unitigs, 'r') as unitig_file:
         for unitig in unitig_file:
             unitig_name = int(unitig_ids[unitig.rstrip()])
-            paths = nx.single_source_dijkstra_path(G, unitig_name, args.length)
+            paths = walk_enumeration(G, unitig_name, args.length)
             extensions = []
-            for path in paths.values():
+            for path in paths:
                 if len(path) > 1:
                     extension = [G.nodes[x]['seq'] for x in path]
                     extensions.append(("".join(extension)))

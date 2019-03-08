@@ -1,5 +1,5 @@
 # unitig-counter
-Uses a coloured de Bruijn graph (implemented in [GATB](https://github.com/GATB/gatb-core)) to count unitigs in bacterial populations.
+Uses a compressed de Bruijn graph (implemented in [GATB](https://github.com/GATB/gatb-core)) to count unitigs in bacterial populations.
 
 ## Details
 This is a slightly modified version of the unitig and graph steps in [DBGWAS](https://gitlab.com/leoisl/dbgwas/) software, repurposed for input into [pyseer](https://pyseer.readthedocs.io/en/master/).
@@ -31,3 +31,16 @@ ID      Path
 
 Output is in `output/unitigs.txt` and can be used with `--kmers` in pyseer. You can also test just the
 unique patterns in `output/unitigs.unique_rows.txt` with the `--Rtab` option.
+
+## Extending unitigs
+Short unitigs can be extended by following paths in the graph to neightbouring nodes. This can help map
+sequences which on their own are difficult to align in a specific manner.
+
+Create a file `unitigs.txt` with the unitigs to extend (probably your significantly associated hits)
+and run:
+```
+python unitig-graph/extend_hits.py --prefix output/graph --unitigs unitigs.txt > extended.txt
+```
+
+The output `extended.txt` will contain possible extensions, comma separated, with lines corresponding to unitigs
+in the input. See the help for more options.
