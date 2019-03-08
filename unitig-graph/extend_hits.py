@@ -33,6 +33,8 @@ def walk_enumeration(G, start_node, length, repeats=False):
             for path in walk_enumeration(G, neighbour, length - G.nodes[neighbour]['seq_len'], repeats):
                 if repeats or start_node not in path:
                     path_list.append([start_node] + path)
+                else:
+                    break
     return path_list
 
 def get_options():
@@ -74,6 +76,8 @@ def main():
     sys.stderr.write("Loading graph\n")
     unitig_ids = {}
     if args.prefix:
+        G = nx.Graph()
+
         # Add nodes first
         node_list = []
         with open(args.prefix + ".nodes", 'r') as node_file:
@@ -82,7 +86,6 @@ def main():
                 node_list.append((int(node_id), dict(seq=node_seq, seq_len=len(node_seq))))
                 unitig_ids[node_seq] = node_id
 
-        G = nx.Graph()
         G.add_nodes_from(node_list)
 
         # add edges
@@ -90,7 +93,6 @@ def main():
         with open(args.prefix + ".edges.dbg", 'r') as edge_file:
             for edge in edge_file:
                 (start, end, label) = edge.rstrip().split("\t")
-
                 edge_list.append((int(start), int(end)))
 
         G.add_edges_from(edge_list)
