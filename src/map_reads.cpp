@@ -339,8 +339,9 @@ void map_reads::execute ()
 
     //after the mapping, free some memory that will not be needed anymore
     //(...don't really need to do this as this is the end)
-    graph.~Graph();
-    delete nodeIdToUnitigId;
+    // this likely causes SIGABRT on exit as graph destructor is called again
+    //graph.~Graph();
+    //delete nodeIdToUnitigId;
 
     //clean-up - saving some disk space
     //remove temp directory
