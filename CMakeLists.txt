@@ -10,7 +10,7 @@ set (CMAKE_CXX_STANDARD 11)
 ################################################################################
 SET (gatb-tool_VERSION_MAJOR 1)
 SET (gatb-tool_VERSION_MINOR 0)
-SET (gatb-tool_VERSION_PATCH 1)
+SET (gatb-tool_VERSION_PATCH 2)
 
 #write the version number
 file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h "\#define VERSION \"${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH}\"")
@@ -83,12 +83,21 @@ include_directories (${gatb-core-includes})
 link_directories (${gatb-core-extra-libraries-path})
 link_directories(${Boost_LIBRARY_DIR})
 
-# We create a target for each
+# graphdists target
+set(PROGRAM graphdists)
+set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/unitig-graph)
+include_directories (${PROGRAM_SOURCE_DIR})
+add_library(${PROGRAM}obj OBJECT ${PROGRAM_SOURCE_DIR}/node_dists.cpp)
+add_library(${PROGRAM} STATIC $<TARGET_OBJECTS:${PROGRAM}obj>)
+add_executable(${PROGRAM}-test $<TARGET_OBJECTS:${PROGRAM}obj> ${PROGRAM_SOURCE_DIR}/dist_example.cpp)
+target_link_libraries(${PROGRAM} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
+
+# unitig-counter target
 set(PROGRAM unitig-counter)
 set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 include_directories (${PROGRAM_SOURCE_DIR})
 file (GLOB_RECURSE  ProjectFiles  ${PROGRAM_SOURCE_DIR}/*.cpp)
-add_executable(${PROGRAM} ${ProjectFiles} ${WhereamiFiles})
+add_executable(${PROGRAM} ${ProjectFiles})
 target_link_libraries(${PROGRAM} ${gatb-core-libraries} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
 
 ################################################################################
