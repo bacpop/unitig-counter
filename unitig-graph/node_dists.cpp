@@ -63,22 +63,22 @@ Cdbg::Cdbg(const string& nodeFile, const string& edgeFile)
         MyVertex toVertex = vertex(to, _dbgGraph);
 
         // Add from -> to
-        pair<MyEdge, bool> return_from_add_edge = add_edge(fromVertex,
+        pair<MyEdge, bool> return_from_forward_edge = add_edge(fromVertex,
                                                            toVertex,
                                                            _dbgGraph);
-        if (return_from_add_edge.second) {
-            _dbgGraph[return_from_add_edge.first].id = index;
-            _dbgGraph[return_from_add_edge.first].weight = _dbgGraph[fromVertex].length;
+        if (return_from_forward_edge.second) {
+            _dbgGraph[return_from_forward_edge.first].id = index;
+            _dbgGraph[return_from_forward_edge.first].weight = _dbgGraph[fromVertex].length;
             index++;
         }
 
         // Add to -> from
-        pair<MyEdge, bool> return_from_add_edge = add_edge(toVertex,
+        pair<MyEdge, bool> return_from_to_edge = add_edge(toVertex,
                                                            fromVertex,
                                                            _dbgGraph);
-        if (return_from_add_edge.second) {
-            _dbgGraph[return_from_add_edge.first].id = index;
-            _dbgGraph[return_from_add_edge.first].weight = _dbgGraph[toVertex].length;
+        if (return_from_to_edge.second) {
+            _dbgGraph[return_from_to_edge.first].id = index;
+            _dbgGraph[return_from_to_edge.first].weight = _dbgGraph[toVertex].length;
             index++;
         }
     }
@@ -93,9 +93,9 @@ vector<int> Cdbg::node_distance(const string& origin)
     fill(distances.begin(), distances.end(), 0);
 
     MyVertex originVertex = vertex(_seqs[origin], _dbgGraph);
-    dijkstra_shortest_paths(_dbgGraph, originVertex,
+    dijkstra_shortest_paths(_dbgGraph, originVertex, weight_map(boost::get(&EdgeInfo::weight, _dbgGraph)).
                             distance_map(boost::make_iterator_property_map(distances.begin(),
-                                         boost::get(boost::vertex_index, _dbgGraph))));
+                                                                           boost::get(boost::vertex_index, _dbgGraph))));
 
     return(distances);
 }
@@ -115,6 +115,7 @@ long int getNbLinesInFile(const string &filename) {
     return n;
 }
 
+// Simple example program
 int main (int argc, char *argv[])
 {
     Cdbg exampleGraph = Cdbg("../test_data/unitigs");
