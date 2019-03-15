@@ -84,11 +84,19 @@ link_directories (${gatb-core-extra-libraries-path})
 link_directories(${Boost_LIBRARY_DIR})
 
 # We create a target for each
+set(PROGRAM graphdists)
+set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/unitig-graph)
+include_directories (${PROGRAM_SOURCE_DIR})
+file (GLOB_RECURSE  ProjectFiles  ${PROGRAM_SOURCE_DIR}/*.cpp)
+add_library(lib${PROGRAM} STATIC ${ProjectFiles})
+add_executable(${PROGRAM} ${ProjectFiles})
+target_link_libraries(${PROGRAM} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
+
 set(PROGRAM unitig-counter)
 set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 include_directories (${PROGRAM_SOURCE_DIR})
 file (GLOB_RECURSE  ProjectFiles  ${PROGRAM_SOURCE_DIR}/*.cpp)
-add_executable(${PROGRAM} ${ProjectFiles} ${WhereamiFiles})
+add_executable(${PROGRAM} ${ProjectFiles})
 target_link_libraries(${PROGRAM} ${gatb-core-libraries} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
 
 ################################################################################
