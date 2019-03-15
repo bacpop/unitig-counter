@@ -114,16 +114,3 @@ long int getNbLinesInFile(const string &filename) {
 
     return n;
 }
-
-// Simple example program
-int main (int argc, char *argv[])
-{
-    Cdbg exampleGraph = Cdbg("../test_data/unitigs");
-
-    // node id 22
-    vector<int> dists = exampleGraph.node_distance("GTAATAAACAAAAAAAAAAGTTAAAAATTAAATAAAAATACTTGACTAAATAAAATATACCTGTTAGAATAAAAACAAGGAAAAAGAAAG");
-    // dist to 23
-    cout << dists[exampleGraph.get_vertex("AAAAAAAAAAGTTAAAAATTACATAAAAATA")] << endl;
-
-    return 0;
-}

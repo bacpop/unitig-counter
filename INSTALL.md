@@ -14,6 +14,7 @@ git clone --depth 50 https://github.com/boostorg/filesystem.git libs/filesystem
 git clone --depth 50 https://github.com/boostorg/system.git libs/system
 git clone --depth 50 https://github.com/boostorg/regex.git libs/regex
 git submodule update -q --init libs/algorithm
+git submodule update -q --init libs/graph
 git submodule update -q --init tools/boostdep
 git submodule update -q --init tools/build
 git submodule update -q --init tools/inspect
