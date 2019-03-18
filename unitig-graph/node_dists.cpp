@@ -103,16 +103,37 @@ vector<int> Cdbg::node_distance(const int origin_id)
 vector<string> Cdbg::extend_hits(const int origin_id, const int length, const bool repeats)
 {
     vector<string> pathSeqs;
+    vector<vector<int>> uniquePaths;
     vector<vector<int>> paths = walk_enumeration(_dbgGraph, origin_id, length, repeats);
-    for (auto pathIt = paths.begin(); pathIt != paths.end(); ++pathIt)
+
+    // Paths from longest to shortest
+    for (auto pathIt = paths.rbegin(); pathIt != paths.rend(); ++pathIt)
     {
         string pathSeq = "";
+        vector<int> pathVisits;
         for (auto nodeIt = pathIt->begin(); nodeIt != pathIt->end(); ++nodeIt)
         {
             MyVertex vF = vertex(*nodeIt, _dbgGraph);
+            pathVisits.push_back(_dbgGraph[vF].id);
             pathSeq = pathSeq + _dbgGraph[vF].name;
         }
-        pathSeqs.push_back(pathSeq);
+
+        // Check if path already covered by another, longer path
+        int covered = 0;
+        for (auto uniqueIt = uniquePaths.begin(); uniqueIt != uniquePaths.end(); ++uniqueIt)
+        {
+            if (includes(uniqueIt->begin(), uniqueIt->end(), pathVisits.begin(), pathVisits.end()))
+            {
+                covered = 1;
+                break;
+            }
+        }
+
+        if (!covered)
+        {
+            pathSeqs.push_back(pathSeq);
+            uniquePaths.push_back(pathVisits);
+        }
     }
     return pathSeqs;
 }

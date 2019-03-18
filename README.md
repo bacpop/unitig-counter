@@ -32,6 +32,12 @@ ID      Path
 Output is in `output/unitigs.txt` and can be used with `--kmers` in pyseer. You can also test just the
 unique patterns in `output/unitigs.unique_rows.txt` with the `--Rtab` option.
 
+## Extracting distances
+Two get the shortest sequence distance between two unitigs:
+```
+cdbg-ops dist --graph test_data/graph --source GTAATAAACAAA --target AAAAAAAAAAGTTAAAAAT
+```
+
 ## Extending unitigs
 Short unitigs can be extended by following paths in the graph to neightbouring nodes. This can help map
 sequences which on their own are difficult to align in a specific manner.
@@ -39,8 +45,14 @@ sequences which on their own are difficult to align in a specific manner.
 Create a file `unitigs.txt` with the unitigs to extend (probably your significantly associated hits)
 and run:
 ```
-python unitig-graph/extend_hits.py --prefix output/graph --unitigs unitigs.txt > extended.txt
+cdbg-ops extend --graph output/graph --unitigs unitigs.txt > extended.txt
 ```
 
 The output `extended.txt` will contain possible extensions, comma separated, with lines corresponding to unitigs
 in the input. See the help for more options.
+
+### Python
+A similar python script can be found in `unitig-graph`:
+```
+python unitig-graph/extend_hits.py --prefix output/graph --unitigs unitigs.txt > extended.txt
+```
