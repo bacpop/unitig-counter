@@ -65,19 +65,13 @@ include (GatbCore)
 #  TOOLS
 ################################################################################
 
+# find Boost
 set(BOOST_ROOT /usr/bin/include)
-#if (Boost_INCLUDE_DIR)
-#    SET(Boost-po_INCLUDE_DIR ${Boost_INCLUDE_DIR})
-#endif()
-#if (Boost_LIBRARY_DIR)
-#    SET(Boost-po_LIBRARY_DIR ${Boost_LIBRARY_DIR})
-#endif()
-
-# cdbg-ops target
 set(Boost_USE_STATIC_LIBS   ON)
-FIND_PACKAGE(Boost 1.69.0 COMPONENTS program_options REQUIRED)
+FIND_PACKAGE(Boost 1.69.0 COMPONENTS program_options filesystem system regex REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
+# cdbg-ops target
 set (PROGRAM cdbg-ops)
 set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/unitig-graph)
 include_directories (${PROGRAM_SOURCE_DIR})
@@ -94,10 +88,6 @@ add_definitions (${gatb-core-flags})
 # We add the pstream include directory
 set (PSTREAMS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/pstreams/)
 include_directories (${PSTREAMS_SOURCE_DIR})
-
-set(Boost_USE_STATIC_LIBS   ON)
-FIND_PACKAGE(Boost 1.69.0 COMPONENTS filesystem system regex REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
 
 # We add the gatb-core include directory
 include_directories (${gatb-core-includes})

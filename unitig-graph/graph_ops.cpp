@@ -1,6 +1,6 @@
 /*
- * dist_example.cpp
- * Demonstrates used of Cdbg class
+ * graph_ops.cpp
+ * Command line interface to Cdbg class
  *
  *  This code: John Lees 2019
  *
@@ -18,7 +18,7 @@ int parseCommandLine (int argc, char *argv[], po::variables_map& vm)
    int failed = 0;
 
    po::positional_options_description mode;
-   mode.add("mode", -1);
+   mode.add("mode", 1);
 
    po::options_description graph("Graph options");
    graph.add_options()
@@ -39,6 +39,7 @@ int parseCommandLine (int argc, char *argv[], po::variables_map& vm)
 
    po::options_description other("Other options");
    other.add_options()
+    ("mode", po::value<string>(), "Mode of operation")
     ("version", "prints version and exits")
     ("help,h", "full help message");
 
@@ -70,9 +71,10 @@ int parseCommandLine (int argc, char *argv[], po::variables_map& vm)
          failed = 0;
 
          // Check input files exist, and can stat
-         if (vm["mode"].as<string>() != "dist" && vm["mode"].as<string>() != "extend")
+         if (vm.count("mode") != 1 ||
+              (vm["mode"].as<string>() != "dist" && vm["mode"].as<string>() != "extend"))
          {
-            cerr << "Possible modes as 'dist' or 'extend" << endl;
+            cerr << "Possible modes are 'dist' or 'extend" << endl;
             failed = 1;
          }
       }
