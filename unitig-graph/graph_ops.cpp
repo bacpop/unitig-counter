@@ -49,15 +49,13 @@ int parseCommandLine (int argc, char *argv[], po::variables_map& vm)
    {
       po::store(
           po::command_line_parser(argc, argv).
-          positional(mode).
+          positional(mode).options(all).
           run(), vm);
 
       if (vm.count("help"))
       {
-         cerr << "cdbg-ops dist" << endl;
-         cerr << "Calculate distance between two nodes" << endl << endl;
-         cerr << "cdbg-ops extend" << endl;
-         cerr << "Extend sequence around a node by finding paths through it" << endl << endl;
+         cerr << "cdbg-ops dist: Calculate distance between two nodes" << endl;
+         cerr << "cdbg-ops extend: Extend sequence around a node by finding paths through it" << endl;
          cerr << all << endl;
          failed = 1;
       }
@@ -98,7 +96,13 @@ int main (int argc, char *argv[])
 {
     // Do parsing and checking of command line params
     po::variables_map vm;
-    if (parseCommandLine(argc, argv, vm))
+    if (argc == 1)
+    {
+        cerr << "cdbg-ops dist --source AATCG --target TTGC" << endl;
+        cerr << "cdbg-ops extend --unitigs significant_hits.txt" << endl;
+        return 1;
+    }
+    else if (parseCommandLine(argc, argv, vm))
     {
         return 1;
     }
@@ -143,7 +147,7 @@ int main (int argc, char *argv[])
             string sequence;
             while (unitigsIst >> sequence)
             {
-                vector<string> paths = graphIn.extend_hits(sequence, vm["length"].as<int>(), vm.count["repeats"]);
+                vector<string> paths = graphIn.extend_hits(sequence, vm["length"].as<int>(), vm.count("repeats"));
                 for (auto it = paths.begin(); it != paths.end(); ++it)
                 {
                     cout << *it;

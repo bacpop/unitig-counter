@@ -10,7 +10,7 @@ set (CMAKE_CXX_STANDARD 11)
 ################################################################################
 SET (gatb-tool_VERSION_MAJOR 1)
 SET (gatb-tool_VERSION_MINOR 0)
-SET (gatb-tool_VERSION_PATCH 2)
+SET (gatb-tool_VERSION_PATCH 3)
 
 #write the version number
 file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h "\#define VERSION \"${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH}\"")
@@ -65,6 +65,29 @@ include (GatbCore)
 #  TOOLS
 ################################################################################
 
+set(BOOST_ROOT /usr/bin/include)
+#if (Boost_INCLUDE_DIR)
+#    SET(Boost-po_INCLUDE_DIR ${Boost_INCLUDE_DIR})
+#endif()
+#if (Boost_LIBRARY_DIR)
+#    SET(Boost-po_LIBRARY_DIR ${Boost_LIBRARY_DIR})
+#endif()
+
+# cdbg-ops target
+set(Boost_USE_STATIC_LIBS   ON)
+FIND_PACKAGE(Boost 1.69.0 COMPONENTS program_options REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+
+set (PROGRAM cdbg-ops)
+set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/unitig-graph)
+include_directories (${PROGRAM_SOURCE_DIR})
+add_library(${PROGRAM}obj OBJECT ${PROGRAM_SOURCE_DIR}/node_dists.cpp)
+add_library(cdbg STATIC $<TARGET_OBJECTS:${PROGRAM}obj>)
+add_executable(${PROGRAM} $<TARGET_OBJECTS:${PROGRAM}obj> ${PROGRAM_SOURCE_DIR}/graph_ops.cpp)
+target_link_libraries(${PROGRAM} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
+
+# unitig-counter target
+
 # We add the compilation options for the library
 add_definitions (${gatb-core-flags})
 
@@ -72,7 +95,6 @@ add_definitions (${gatb-core-flags})
 set (PSTREAMS_SOURCE_DIR ${PROJECT_SOURCE_DIR}/pstreams/)
 include_directories (${PSTREAMS_SOURCE_DIR})
 
-set(BOOST_ROOT /usr/bin/include)
 set(Boost_USE_STATIC_LIBS   ON)
 FIND_PACKAGE(Boost 1.69.0 COMPONENTS filesystem system regex REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
@@ -84,15 +106,7 @@ include_directories (${gatb-core-includes})
 link_directories (${gatb-core-extra-libraries-path})
 link_directories(${Boost_LIBRARY_DIR})
 
-# cdbg-ops target
-set(PROGRAM cdbg-ops)
-set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/unitig-graph)
-include_directories (${PROGRAM_SOURCE_DIR})
-add_library(${PROGRAM}obj OBJECT ${PROGRAM_SOURCE_DIR}/node_dists.cpp)
-add_library(${PROGRAM} STATIC $<TARGET_OBJECTS:${PROGRAM}obj>)
-add_executable(${PROGRAM} $<TARGET_OBJECTS:${PROGRAM}obj> ${PROGRAM_SOURCE_DIR}/graph_ops.cpp)
-
-# unitig-counter target
+# target
 set(PROGRAM unitig-counter)
 set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 include_directories (${PROGRAM_SOURCE_DIR})
