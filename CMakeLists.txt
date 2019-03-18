@@ -14,6 +14,7 @@ SET (gatb-tool_VERSION_PATCH 2)
 
 #write the version number
 file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h "\#define VERSION \"${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH}\"")
+file(WRITE ${PROJECT_SOURCE_DIR}/unitig-graph/version.h "\#define VERSION \"${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH}\"")
 
 
 IF (DEFINED MAJOR)
@@ -83,14 +84,13 @@ include_directories (${gatb-core-includes})
 link_directories (${gatb-core-extra-libraries-path})
 link_directories(${Boost_LIBRARY_DIR})
 
-# graphdists target
-set(PROGRAM graphdists)
+# cdbg-ops target
+set(PROGRAM cdbg-ops)
 set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/unitig-graph)
 include_directories (${PROGRAM_SOURCE_DIR})
 add_library(${PROGRAM}obj OBJECT ${PROGRAM_SOURCE_DIR}/node_dists.cpp)
 add_library(${PROGRAM} STATIC $<TARGET_OBJECTS:${PROGRAM}obj>)
-add_executable(${PROGRAM}-test $<TARGET_OBJECTS:${PROGRAM}obj> ${PROGRAM_SOURCE_DIR}/dist_example.cpp)
-target_link_libraries(${PROGRAM} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
+add_executable(${PROGRAM} $<TARGET_OBJECTS:${PROGRAM}obj> ${PROGRAM_SOURCE_DIR}/graph_ops.cpp)
 
 # unitig-counter target
 set(PROGRAM unitig-counter)
@@ -110,7 +110,6 @@ install (TARGETS ${PROGRAMS} DESTINATION bin COMPONENT precompiled)
 ################################################################################
 # We set the version number
 SET (CPACK_PACKAGE_DESCRIPTION_SUMMARY  "gatb-tool ${PROJECT_NAME}")
-SET (CPACK_PACKAGE_VENDOR               "bioMerieux; LBBE; Erable")
 SET (CPACK_PACKAGE_VERSION_MAJOR        "${gatb-tool_VERSION_MAJOR}")
 SET (CPACK_PACKAGE_VERSION_MINOR        "${gatb-tool_VERSION_MINOR}")
 SET (CPACK_PACKAGE_VERSION_PATCH        "${gatb-tool_VERSION_PATCH}")

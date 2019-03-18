@@ -10,7 +10,7 @@
  *  Cold Spring Harbor Labs Journals, doi:10.1101/113563.
  *  (url: http://www.biorxiv.org/content/early/2017/03/03/113563)
  *
- *  This code: John Lees
+ *  This code: John Lees 2019
  *
  */
 
@@ -31,14 +31,14 @@
 
 using namespace std;
 
-//vertex informations
+// Vertex metadata
 struct VertexInfo {
     string name;
     int length;
     int id;
 };
 
-//edge informations
+// Edge metadata
 struct EdgeInfo {
     int id;
     int weight;
@@ -54,20 +54,25 @@ typedef boost::graph_traits<adjlist_t>::edge_descriptor MyEdge;
 
 class Cdbg
 {
-   public:
+    public:
         // Initialisation
         Cdbg(const string& dbgPrefix);
         Cdbg(const string& nodeFile, const string& edgeFile);
 
         // Non-modifying operations
         MyVertex get_vertex(const string& sequence) { return vertex(_seqs[sequence], _dbgGraph); }
+        MyVertex get_vertex(const int id) { return vertex(id, _dbgGraph); }
+        vector<int> node_distance(const int origin_id);
+        vector<int> node_distance(const string& origin_seq) { return node_distance(_seqs[origin_seq]); }
+        vector<string> extend_hits(const int origin_id, const int length, const bool repeats=0);
+        vector<string> extend_hits(const string& origin_seq, const int length, const bool repeats=0)
+                                  { return extend_hits(_seqs[origin_seq], length, repeats); }
 
-        // Modifying operations
-        vector<int> node_distance(const string& origin);
-
-   protected:
-      graph_t _dbgGraph;
-      unordered_map<string, int> _seqs;
+    protected:
+        graph_t _dbgGraph;
+        unordered_map<string, int> _seqs;
 };
 
 long int getNbLinesInFile(const string &filename);
+vector<vector<int>> walk_enumeration(const graph_t& graph, const int start_node, const int length, const bool repeats=0);
+

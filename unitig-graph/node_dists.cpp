@@ -10,7 +10,7 @@
  *  Cold Spring Harbor Labs Journals, doi:10.1101/113563.
  *  (url: http://www.biorxiv.org/content/early/2017/03/03/113563)
  *
- *  This code: John Lees
+ *  This code: John Lees 2019
  *
  */
 
@@ -85,19 +85,65 @@ Cdbg::Cdbg(const string& nodeFile, const string& edgeFile)
     edgeIst.close();
 }
 
-// Graph alogorithms and helper functions
+// Graph algorithms
 
-vector<int> Cdbg::node_distance(const string& origin)
+vector<int> Cdbg::node_distance(const int origin_id)
 {
     vector<int> distances(num_vertices(_dbgGraph));
     fill(distances.begin(), distances.end(), 0);
 
-    MyVertex originVertex = vertex(_seqs[origin], _dbgGraph);
+    MyVertex originVertex = vertex(origin_id, _dbgGraph);
     dijkstra_shortest_paths(_dbgGraph, originVertex, weight_map(boost::get(&EdgeInfo::weight, _dbgGraph)).
                             distance_map(boost::make_iterator_property_map(distances.begin(),
                                                                            boost::get(boost::vertex_index, _dbgGraph))));
 
     return(distances);
+}
+
+vector<string> Cdbg::extend_hits(const int origin_id, const int length, const bool repeats)
+{
+    vector<string> pathSeqs;
+    vector<vector<int>> paths = walk_enumeration(_dbgGraph, origin_id, length, repeats);
+    for (auto pathIt = paths.begin(); pathIt != paths.end(); ++pathIt)
+    {
+        string pathSeq = "";
+        for (auto nodeIt = pathIt->begin(); nodeIt != pathIt->end(); ++nodeIt)
+        {
+            MyVertex vF = vertex(*nodeIt, _dbgGraph);
+            pathSeq = pathSeq + _dbgGraph[vF].name;
+        }
+        pathSeqs.push_back(pathSeq);
+    }
+    return pathSeqs;
+}
+
+// Helper functions
+vector<vector<int>> walk_enumeration(const graph_t& graph, const int start_node, const int length, const bool repeats)
+{
+    vector<vector<int>> path_list = {{start_node}};
+    auto neighbours = boost::adjacent_vertices(start_node, graph);
+    for (auto neighbour : boost::make_iterator_range(neighbours))
+    {
+        MyVertex vF = vertex(neighbour, graph);
+        if (length - graph[vF].length >= 0)
+        {
+            auto paths = walk_enumeration(graph, graph[vF].id, length - graph[vF].length, repeats);
+            for (auto path = paths.begin() ; path != paths.end() ; ++path)
+            {
+                auto search_it = find(path->begin(), path->end(), start_node);
+                if (repeats || search_it == path->end())
+                {
+                    path->insert(path->begin(), start_node);
+                    path_list.push_back(*path);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+    }
+    return path_list;
 }
 
 long int getNbLinesInFile(const string &filename) {
