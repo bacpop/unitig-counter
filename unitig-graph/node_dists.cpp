@@ -87,6 +87,7 @@ Cdbg::Cdbg(const string& nodeFile, const string& edgeFile)
 
 // Graph algorithms
 
+// Shortest distance with Dijkstra's algorithm
 vector<int> Cdbg::node_distance(const int origin_id)
 {
     vector<int> distances(num_vertices(_dbgGraph));
@@ -104,6 +105,8 @@ vector<string> Cdbg::extend_hits(const int origin_id, const int length, const bo
 {
     vector<string> pathSeqs;
     vector<vector<int>> uniquePaths;
+
+    // Get paths in terms of nodeIds
     vector<vector<int>> paths = walk_enumeration(_dbgGraph, origin_id, length, repeats);
 
     // Paths from longest to shortest
@@ -129,6 +132,7 @@ vector<string> Cdbg::extend_hits(const int origin_id, const int length, const bo
             }
         }
 
+        // Add path if not covered
         if (!covered)
         {
             pathSeqs.push_back(pathSeq);
@@ -139,6 +143,8 @@ vector<string> Cdbg::extend_hits(const int origin_id, const int length, const bo
 }
 
 // Helper functions
+
+// Recursively visits neighbour nodes to form paths
 vector<vector<int>> walk_enumeration(const graph_t& graph, const int start_node, const int length, const bool repeats)
 {
     vector<vector<int>> path_list = {{start_node}};
@@ -151,16 +157,18 @@ vector<vector<int>> walk_enumeration(const graph_t& graph, const int start_node,
             auto paths = walk_enumeration(graph, graph[vF].id, length - graph[vF].length, repeats);
             for (auto path = paths.begin() ; path != paths.end() ; ++path)
             {
-                auto search_it = find(path->begin(), path->end(), start_node);
-                if (repeats || search_it == path->end())
+                // Check if path has a repeat, and stop if so
+                if (!repeats)
                 {
-                    path->insert(path->begin(), start_node);
-                    path_list.push_back(*path);
+                    auto search_it = find(path->begin(), path->end(), start_node);
+                    if (search_it != path->end())
+                    {
+                        break;
+                    }
                 }
-                else
-                {
-                    break;
-                }
+                path->insert(path->begin(), start_node);
+                path_list.push_back(*path);
+
             }
         }
     }

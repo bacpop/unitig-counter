@@ -111,6 +111,7 @@ int main (int argc, char *argv[])
 
     cerr << "Reading graph" << endl;
 
+    // Get nodes and edges files needed to create Cdbg object
     string nodes, edges;
     if (vm.count("graph"))
     {
@@ -128,18 +129,21 @@ int main (int argc, char *argv[])
     }
     Cdbg graphIn(nodes, edges);
 
+    // Distance mode
     if (vm["mode"].as<string>() == "dist")
     {
         cerr << "Calculating distances from node" << endl;
         vector<int> dists = graphIn.node_distance(vm["source"].as<string>());
         cout << dists[graphIn.get_vertex(vm["target"].as<string>())] << endl;
     }
+    // Extend mode
     else if (vm["mode"].as<string>() == "extend")
     {
         cerr << "Getting paths through nodes" << endl;
 
         if (vm.count("unitigs"))
         {
+            // Read in unitigs to extend
             ifstream unitigsIst(vm["unitigs"].as<string>().c_str());
             if (!unitigsIst)
             {
@@ -149,6 +153,7 @@ int main (int argc, char *argv[])
             string sequence;
             while (unitigsIst >> sequence)
             {
+                // Get extensions and print
                 vector<string> paths = graphIn.extend_hits(sequence, vm["length"].as<int>(), vm.count("repeats"));
                 for (auto it = paths.begin(); it != paths.end(); ++it)
                 {

@@ -73,6 +73,7 @@ class Cdbg
         unordered_map<string, int> _seqs;
 };
 
-long int getNbLinesInFile(const string &filename);
+// Helper functions
 vector<vector<int>> walk_enumeration(const graph_t& graph, const int start_node, const int length, const bool repeats=0);
+long int getNbLinesInFile(const string &filename);
 
