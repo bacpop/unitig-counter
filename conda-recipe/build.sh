@@ -20,6 +20,8 @@ python2 tools/boostdep/depinst/depinst.py program_options --include example
 python2 tools/boostdep/depinst/depinst.py filesystem --include example
 python2 tools/boostdep/depinst/depinst.py system --include example
 python2 tools/boostdep/depinst/depinst.py regex --include example
+python2 tools/boostdep/depinst/depinst.py graph --include example
+python2 tools/boostdep/depinst/depinst.py algorithm --include example
 
 CXXFLAGS="${CXXFLAGS} -fPIC"
 INCLUDE_PATH="${PREFIX}/include"
@@ -66,7 +68,7 @@ popd
 
 # build unitig-counter
 mkdir build && pushd build
-cmake -DCMAKE_BUILD_TYPE=Release -DBoost_INCLUDE_DIR=${BOOST_BUILT}/include -DBoost_LIBRARY_DIR=${BOOST_BUILT}/lib ..
+cmake -DCMAKE_BUILD_TYPE=Release -DBoost_INCLUDE_DIR=${BOOST_BUILT}/include -DBoost_LIBRARY_DIR=${BOOST_BUILT}/lib -DCMAKE_INSTALL_PREFIX=$PREFIX ..
 make VERBOSE=1
 make install
 popd
