@@ -1,32 +1,36 @@
 {% set name = "unitig-counter" %}
-{% set version = "1.0.3" %}
+{% set version = "1.0.4" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://github.com/johnlees/{{ name|lower }}/archive/v{{ version }}.tar.gz
-  sha256: 08dc14ebbb2559c21f5b6871726782dffdc810152af40ab8cd1423b98f882210
+  git_url: https://github.com/johnlees/{{ name|lower }}.git
+  git_rev: v{{ version }}
+  sha256: e91e726bb9d11e25868bac990b55d9f178ae195a826992dd0be6e4508011f4a7
 
 build:
   number: 0
+  skip: True #  [osx]
 
 requirements:
   build:
     - {{ compiler('c') }}
     - {{ compiler('cxx') }}
-    - python <3
   host:
     - cmake
+    - zlib
     - pthread-stubs
+    - boost
+    - boost-cpp
   run:
     - pthread-stubs
 
 test:
   commands:
-    - unitig-counter --version
-    - cdbg-ops --version
+    - unitig-counter -help | grep 'unitig-counter options'
+    - cdbg-ops -h 2>&1 | grep 'cdbg-ops dist'
 
 about:
    home: https://github.com/johnlees/unitig-counter
@@ -36,5 +40,7 @@ about:
    summary: Uses a compressed de Bruijn graph (implemented in GATB) to count unitigs in bacterial populations.
 
 extra:
+   skip-lints:
+     - uses_git_url
    identifiers:
      - doi:10.1371/journal.pgen.1007758
