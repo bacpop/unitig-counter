@@ -16,6 +16,16 @@ Jaillard M., Lima L. et al. A fast and agnostic method for bacterial genome-wide
 * Remove unused depencencies.
 * Change installation procedure ready for bioconda.
 
+## Install
+
+Recommended installation is through [conda](https://docs.conda.io/en/latest/miniconda.html):
+```
+conda install unitig-counter
+```
+If the package cannot be found, [ensure your channels are set up correctly for bioconda](http://bioconda.github.io/#set-up-channels).
+
+For compilation from source, see `INSTALL.md`
+
 ## Usage
 Run:
 ```
