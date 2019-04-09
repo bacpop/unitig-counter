@@ -24,12 +24,12 @@ conda install unitig-counter
 ```
 If the package cannot be found, [ensure your channels are set up correctly for bioconda](http://bioconda.github.io/#set-up-channels).
 
-For compilation from source, see `INSTALL.md`
+For compilation from source, see `INSTALL.md`.
 
 ## Usage
 Run:
 ```
-./unitig-counter -strains strain_list.txt -output output -nb-cores 4
+unitig-counter -strains strain_list.txt -output output -nb-cores 4
 ```
 
 Where `strain_list.txt` is a list of input files (assemblies) with a header, for example:
