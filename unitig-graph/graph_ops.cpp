@@ -29,7 +29,9 @@ int parseCommandLine (int argc, char *argv[], po::variables_map& vm)
    po::options_description dist("Distance options");
    dist.add_options()
     ("source", po::value<string>(), "Sequence of source node")
-    ("target", po::value<string>(), "Sequence of target node");
+    ("source-list", po::value<string>(), "File containing sequences of source nodes")
+    ("target", po::value<string>(), "Sequence of target node")
+    ("all", "Generate distances to all other unitigs");
 
    po::options_description extend("Extending options");
    extend.add_options()
@@ -133,8 +135,55 @@ int main (int argc, char *argv[])
     if (vm["mode"].as<string>() == "dist")
     {
         cerr << "Calculating distances from node" << endl;
-        vector<int> dists = graphIn.node_distance(vm["source"].as<string>());
-        cout << dists[graphIn.get_vertex(vm["target"].as<string>())] << endl;
+
+        if (!vm.count("target") && !vm.count("all"))
+        {
+            throw std::runtime_error("Need to provide a target or all in dist mode");
+        }
+
+        vector<string> sources;
+        if (vm.count("source-list"))
+        {
+            ifstream sourceIst(vm["source-list"].as<string>().c_str());
+            if (!sourceIst)
+            {
+                throw std::runtime_error("Could not open node file " + vm["source-list"].as<string>() + "\n");
+            }
+
+            string sequence;
+            while (sourceIst >> sequence)
+            {
+                sources.push_back(sequence);
+            }
+
+            sourceIst.close();
+        }
+        else if (vm.count("source"))
+        {
+            sources.push_back(vm["source"].as<string>());
+        }
+        else
+        {
+            throw std::runtime_error("Need to provide a source in dist mode");
+        }
+
+        cout << "Source\tTarget\tDistance" << endl;
+        for (auto it = sources.begin(); it != sources.end(); it++)
+        {
+            vector<int> dists = graphIn.node_distance(*it);
+            if (vm.count("all"))
+            {
+                for (size_t i = 0; i < dists.size(); i++)
+                {
+                    cout << *it << graphIn.node_seq(i) << "\t" << dists[i] << endl;
+                }
+            }
+            else if (vm.count("target"))
+            {
+                cout << *it << dists[graphIn.get_vertex(vm["target"].as<string>())] << endl;
+            }
+        }
+
     }
     // Extend mode
     else if (vm["mode"].as<string>() == "extend")

@@ -62,6 +62,7 @@ class Cdbg
         // Non-modifying operations
         MyVertex get_vertex(const string& sequence) { return vertex(_seqs[sequence], _dbgGraph); }
         MyVertex get_vertex(const int id) { return vertex(id, _dbgGraph); }
+        std::string node_seq(const int id) { MyVertex vF = vertex(id, _dbgGraph); return _dbgGraph[vF].name; }
         vector<int> node_distance(const int origin_id);
         vector<int> node_distance(const string& origin_seq) { return node_distance(_seqs[origin_seq]); }
         vector<string> extend_hits(const int origin_id, const int length, const bool repeats=0);
