@@ -212,29 +212,6 @@ void checkParametersBuildDBG(Tool *tool) {
 
 
 
-void checkParametersGenerateOutput(Tool *tool) {
-
-  //create the output folder for step 3
-  string outputFolder = stripLastSlashIfExists(tool->getInput()->getStr(STR_OUTPUT))+string("/step3");
-  createFolder(outputFolder);
-
-  //create the tmp folder of step 3
-  string tmpFolder = outputFolder+string("/tmp");
-  createFolder(tmpFolder);
-
-  string visualisationFolder = stripLastSlashIfExists(tool->getInput()->getStr(STR_OUTPUT))+string("/visualisations");
-  boost::filesystem::path visPath(visualisationFolder.c_str());
-  if (boost::filesystem::exists(visPath)) {
-    cerr << "[WARNING] Removing " << visualisationFolder << " because path already exists (maybe previous visualisations?). " << endl;
-    boost::filesystem::remove_all(visPath);
-  }
-  createFolder(visPath.string());
-  visPath /= "components";
-  createFolder(visPath.string());
-
-}
-
-
 void fatalError (const string &message) {
   cerr << endl << endl << "[FATAL ERROR] " << message << endl << endl;
   cerr.flush();

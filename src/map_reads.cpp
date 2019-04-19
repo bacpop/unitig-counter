@@ -335,7 +335,7 @@ void map_reads::execute ()
     //generate the pyseer input
     generatePyseerInput(allReadFilesNames, outputFolder, tmpFolder, nbContigs);
 
-    cout << "Number of unique patterns: " << getNbLinesInFile(outputFolder+string("/unitigs.unique_rows.txt")) << endl;
+    cout << "Number of unique patterns: " << getNbLinesInFile(outputFolder+string("/unitigs.unique_rows.Rtab")) << endl;
 
     //after the mapping, free some memory that will not be needed anymore
     //(...don't really need to do this as this is the end)

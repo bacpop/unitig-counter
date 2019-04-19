@@ -10,7 +10,7 @@ set (CMAKE_CXX_STANDARD 11)
 ################################################################################
 SET (gatb-tool_VERSION_MAJOR 1)
 SET (gatb-tool_VERSION_MINOR 0)
-SET (gatb-tool_VERSION_PATCH 4)
+SET (gatb-tool_VERSION_PATCH 5)
 
 #write the version number
 file(WRITE ${PROJECT_SOURCE_DIR}/src/version.h "\#define VERSION \"${gatb-tool_VERSION_MAJOR}.${gatb-tool_VERSION_MINOR}.${gatb-tool_VERSION_PATCH}\"")
