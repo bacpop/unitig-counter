@@ -38,7 +38,7 @@ const char* STR_OUTPUT = "-output";
 const char* STR_NBCORES = "-nb-cores";
 
 //global vars used by both programs
-Graph graph;
+Graph *graph;
 vector< UnitigIdStrandPos >* nodeIdToUnitigId;
 vector< Strain >* strains = NULL;
 

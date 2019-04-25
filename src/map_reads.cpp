@@ -327,7 +327,7 @@ void map_reads::execute ()
     // We iterate the range.  NOTE: we could also use lambda expression (easing the code readability)
     uint64_t nbOfReadsProcessed = 0;
     dispatcher.iterate(allReadFilesNamesIt,
-                       MapAndPhase(allReadFilesNames, graph, outputFolder, tmpFolder, nbOfReadsProcessed, synchro,
+                       MapAndPhase(allReadFilesNames, *graph, outputFolder, tmpFolder, nbOfReadsProcessed, synchro,
                                    *nodeIdToUnitigId, nbContigs));
 
     cerr << endl << "[Mapping process finished!]" << endl;
@@ -337,9 +337,10 @@ void map_reads::execute ()
 
     cout << "Number of unique patterns: " << getNbLinesInFile(outputFolder+string("/unitigs.unique_rows.Rtab")) << endl;
 
-    //after the mapping, free some memory that will not be needed anymore
-    //(...don't really need to do this as this is the end)
-    // this likely causes SIGABRT on exit as graph destructor is called again
+    // Remove the global graph pointer, otherwise its destructor is called
+    // twice by GATB (after main) giving a HDF5 error
+    delete graph;
+
     //graph.~Graph();
     //delete nodeIdToUnitigId;
 

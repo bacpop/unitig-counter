@@ -33,7 +33,7 @@
 #include "Utils.h"
 
 //global vars
-extern Graph graph;
+extern Graph *graph;
 extern vector< UnitigIdStrandPos >* nodeIdToUnitigId;
 extern vector< Strain >* strains;
 extern const char* STR_STRAINS_FILE;

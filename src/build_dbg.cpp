@@ -262,14 +262,14 @@ void build_dbg::execute ()
 
     //Builds the DBG using GATB
     //TODO: by using create() and assigning to a Graph object, the copy constructor does a shallow or deep copy??
-    graph = gatb::core::debruijn::impl::Graph::create("-in %s -kmer-size %d -abundance-min 0 -out %s/graph -nb-cores %d",
-                                                          readsFile.c_str(), kmerSize, outputFolder.c_str(), nbCores);
+    graph = new Graph(gatb::core::debruijn::impl::Graph::create("-in %s -kmer-size %d -abundance-min 0 -out %s/graph -nb-cores %d",
+                                                          readsFile.c_str(), kmerSize, outputFolder.c_str(), nbCores));
 
     // Finding the unitigs
     //nodeIdToUnitigId translates the nodes that are stored in the GATB graph to the id of the unitigs together with the unitig strand
-    nodeIdToUnitigId = new vector< UnitigIdStrandPos >((size_t)graph.getInfo()["kmers_nb_solid"]->getInt()); //map nodeMPFHIndex() to unitigIds and strand
+    nodeIdToUnitigId = new vector< UnitigIdStrandPos >((size_t)graph->getInfo()["kmers_nb_solid"]->getInt()); //map nodeMPFHIndex() to unitigIds and strand
     string linear_seqs_name = outputFolder+"/graph.unitigs";
-    construct_linear_seqs (graph, linear_seqs_name, *nodeIdToUnitigId);
+    construct_linear_seqs (*graph, linear_seqs_name, *nodeIdToUnitigId);
 
     //builds and outputs .nodes and .edges.dbg files
     typedef boost::variant <
@@ -280,10 +280,10 @@ void build_dbg::execute ()
     >  GraphOutputVariant;
 
     GraphOutputVariant graphOutput;
-    if (kmerSize < KMER_SPAN(0))  {  graphOutput = GraphOutput<KMER_SPAN(0)>(&graph, outputFolder+string("/graph")); }
-    else if (kmerSize < KMER_SPAN(1))  {  graphOutput = GraphOutput<KMER_SPAN(1)>(&graph, outputFolder+string("/graph")); }
-    else if (kmerSize < KMER_SPAN(2))  {  graphOutput = GraphOutput<KMER_SPAN(2)>(&graph, outputFolder+string("/graph")); }
-    else if (kmerSize < KMER_SPAN(3))  {  graphOutput = GraphOutput<KMER_SPAN(3)>(&graph, outputFolder+string("/graph")); }
+    if (kmerSize < KMER_SPAN(0))  {  graphOutput = GraphOutput<KMER_SPAN(0)>(graph, outputFolder+string("/graph")); }
+    else if (kmerSize < KMER_SPAN(1))  {  graphOutput = GraphOutput<KMER_SPAN(1)>(graph, outputFolder+string("/graph")); }
+    else if (kmerSize < KMER_SPAN(2))  {  graphOutput = GraphOutput<KMER_SPAN(2)>(graph, outputFolder+string("/graph")); }
+    else if (kmerSize < KMER_SPAN(3))  {  graphOutput = GraphOutput<KMER_SPAN(3)>(graph, outputFolder+string("/graph")); }
     else { throw gatb::core::system::Exception ("Graph failure because of unhandled kmer size %d", kmerSize); }
     boost::apply_visitor (EdgeConstructionVisitor(linear_seqs_name),  graphOutput);
 
@@ -293,7 +293,7 @@ void build_dbg::execute ()
     //print some stats
     cout << "################################################################################" << endl;
     cout << "Stats: " << endl;
-    cout << "Number of kmers: " << graph.getInfo()["kmers_nb_solid"]->getInt() << endl;
+    cout << "Number of kmers: " << graph->getInfo()["kmers_nb_solid"]->getInt() << endl;
     cout << "Number of unitigs: " << getNbLinesInFile(outputFolder+string("/graph.nodes")) << endl;
     cout << "################################################################################" << endl;
 }
