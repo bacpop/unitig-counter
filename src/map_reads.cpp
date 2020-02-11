@@ -178,7 +178,7 @@ transposeXU( std::vector< boost::dynamic_bitset<> > &XUT )
         	pos = bitset.find_next(pos);
         }
         // release memory
-        bitset.swap(bitmap_t()); // apparently the swap trick is still the most reliable way to accomplish this // bitset.resize(0); bitset.shrink_to_fit();
+        bitset.resize(0); bitmap_t(bitset).swap(bitset);
 	}
 	return XU;
 }
@@ -340,7 +340,7 @@ void map_reads::execute ()
     // Peak memory use occurs at the start and will be twice the matrix size (= 2 * (nbContigs*strains->size()/8) bytes).
     cout << "[Transpose pattern matrix..]" << endl;
     auto XU = transposeXU( allUnitigPatterns ); // this will consume allUnitigPatterns while transposing
-    allUnitigPatterns.swap(bitmap_container_t()); // release memory
+    allUnitigPatterns.resize(0); bitmap_container_t(allUnitigPatterns).swap(allUnitigPatterns); // release memory
 
     //generate the pyseer input
     cout << "[Generating pyseer input]..." << endl;
