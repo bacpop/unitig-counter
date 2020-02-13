@@ -32,10 +32,14 @@
 #include "Utils.h"
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/dynamic_bitset.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/device/file.hpp>
 #include <map>
 #define NB_OF_READS_NOTIFICATION_MAP_AND_PHASE 10 //Nb of reads that the map and phase must process for notification
 using namespace std;
 
+namespace io = boost::iostreams;
 
 void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector< UnitigIdStrandPos > &nodeIdToUnitigId,
                            boost::dynamic_bitset<>& unitigPattern ) {
@@ -43,7 +47,7 @@ void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector<
 
     //goes through all nodes/kmers of the read
     if (read.size() >= graph.getKmerSize()) {
-        for (int i = 0; i < read.size() - graph.getKmerSize() + 1; i++) {
+        for (std::size_t i = 0; i < read.size() - graph.getKmerSize() + 1; i++) {
             string LRKmer = string(read.c_str() + i, graph.getKmerSize());
 
             //TODO: From my tests, if you use buildNode with a Kmer containing an 'N', it will build a node with all Ns replaced by G
@@ -74,13 +78,6 @@ void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector<
         }
     }
 }
-/*
-void mapReadToTheGraph(const string &read, int readfileIndex, unsigned long readIndex, const Graph &graph,
-                       const vector< UnitigIdStrandPos > &nodeIdToUnitigId, map<int,int> &unitigIdToCount) {
-    //map the read
-    mapReadToTheGraphCore(read, graph, nodeIdToUnitigId, unitigIdToCount);
-}
-*/
 
 // We define a functor that will be cloned by the dispatcher
 struct MapAndPhase
@@ -141,7 +138,7 @@ struct MapAndPhase
         for (it.first(); !it.isDone(); it.next()) {
             string read = (it.item()).toString();
             //transform the read to upper case
-            for (int j=0;j<read.size();j++)
+            for (std::size_t j=0;j<read.size();j++)
                 read[j]=toupper(read[j]);
 
             //map this read to the graph
@@ -168,7 +165,7 @@ transposeXU( std::vector< boost::dynamic_bitset<> > &XUT )
 
 	// transpose the input matrix; this is a fairly expensive operation
 	// due to the horrible memory access patterns involved here
-	for( auto i=0; i< XUT.size(); ++i )
+	for( std::size_t i=0; i<XUT.size(); ++i )
 	{
 		auto& bitset = XUT[i];
         auto pos = bitset.find_first();
@@ -199,10 +196,28 @@ map< boost::dynamic_bitset<>, vector<int> > getUnitigsWithSamePattern (const vec
 	return pattern2Unitigs;
 }
 
-void generate_XU(const string &filename, const string &nodesFile, const vector< boost::dynamic_bitset<> > &XU) {
+bool init_sink( const std::string& filename, io::filtering_ostream& os, bool compress=false )
+{
+	if( compress ) {
+		os.push( io::gzip_compressor() );
+		os.push( io::file_sink(filename+".gz",std::ios::binary) );
+	}
+	else {
+		os.push( io::file_sink(filename) );
+	}
+
+	return os.is_complete();
+}
+
+void generate_XU(const string &filename, const string &nodesFile, const vector< boost::dynamic_bitset<> > &XU, bool compress=false ) {
 	using bitmap_t = boost::dynamic_bitset<>;
-	ofstream XUFile;
-    openFileForWriting(filename, XUFile);
+	//ofstream XUFile;
+    //openFileForWriting(filename, XUFile);
+	io::filtering_ostream XUFile;
+	if( !init_sink( filename, XUFile, compress ) ) {
+		cerr << "Unknown error when trying to open file \"" << filename << "\" for output!" << endl;
+		return;
+	}
 
     //open file with list of node sequences
     ifstream nodesFileReader;
@@ -226,7 +241,7 @@ void generate_XU(const string &filename, const string &nodesFile, const vector< 
         XUFile << endl;
     }
     nodesFileReader.close();
-    XUFile.close();
+    //XUFile.close(); // filtering_ostream's destructor does this for us
 }
 
 void generate_unique_id_to_original_ids(const string &filename,
@@ -250,9 +265,14 @@ void generate_unique_id_to_original_ids(const string &filename,
 }
 
 void generate_XU_unique(const string &filename, const vector< boost::dynamic_bitset<> > &XU,
-                        const map< boost::dynamic_bitset<>, vector<int> > &pattern2Unitigs){
-    ofstream XUUnique;
-    openFileForWriting(filename, XUUnique);
+                        const map< boost::dynamic_bitset<>, vector<int> > &pattern2Unitigs, bool compress=false ){
+    //ofstream XUUnique;
+    //openFileForWriting(filename, XUUnique);
+	io::filtering_ostream XUUnique;
+	if( !init_sink( filename, XUUnique, compress ) ) {
+		cerr << "Unknown error when trying to open file \"" << filename << "\" for output!" << endl;
+		return;
+	}
 
     //print the header
     XUUnique << "pattern_id";
@@ -272,22 +292,23 @@ void generate_XU_unique(const string &filename, const vector< boost::dynamic_bit
             XUUnique << " " << pattern[i];
         XUUnique << endl;
     }
-    XUUnique.close();
+    //XUUnique.close(); // filtering_ostream's destructor does this for us
 }
 
 //generate the pyseer input
 void generatePyseerInput (const vector <string> &allReadFilesNames,
                           const string &outputFolder,
 						  const vector< boost::dynamic_bitset<> >& XU,
-                          int nbContigs) {
+                          int nbContigs, bool compress=false ) {
     //Generate the XU (the pyseer input - the unitigs are rows with strains present)
     //XU_unique is XU is in matrix form (for Rtab input) with the duplicated rows removed
     //create the files for pyseer
     {
-        generate_XU(outputFolder+string("/unitigs.txt"), outputFolder+string("/graph.nodes"), XU);
+        generate_XU(outputFolder+string("/unitigs.txt"), outputFolder+string("/graph.nodes"), XU, compress );
         auto pattern2Unitigs = getUnitigsWithSamePattern(XU);
+        cout << "Number of unique patterns: " << pattern2Unitigs.size() << endl;
         generate_unique_id_to_original_ids(outputFolder+string("/unitigs.unique_rows_to_all_rows.txt"), pattern2Unitigs);
-        generate_XU_unique(outputFolder+string("/unitigs.unique_rows.Rtab"), XU, pattern2Unitigs);
+        generate_XU_unique(outputFolder+string("/unitigs.unique_rows.Rtab"), XU, pattern2Unitigs, compress );
     }
 }
 
@@ -300,6 +321,7 @@ void map_reads::execute ()
     string tmpFolder = outputFolder+string("/tmp");
     string longReadsFile = tmpFolder+string("/readsFile");
     int nbCores = getInput()->getInt(STR_NBCORES);
+    const bool compress = getInput()->get(STR_GZIP);
 
     //get the nbContigs
     int nbContigs = getNbLinesInFile(outputFolder+string("/graph.nodes"));
@@ -336,7 +358,7 @@ void map_reads::execute ()
     // allUnitigPatterns has all samples/strains over the first dimension and
     // unitig presense patterns over the second dimension (in bitsets).
     // Here we transpose the matrix, while consuming it in order to gradually reduce memory footprint.
-    // For larger data sets this pattern accounting will dominate our emory footprint; overall memory consumption will peak here.
+    // For larger data sets this pattern accounting will dominate our memory footprint; overall memory consumption will peak here.
     // Peak memory use occurs at the start and will be twice the matrix size (= 2 * (nbContigs*strains->size()/8) bytes).
     cout << "[Transpose pattern matrix..]" << endl;
     auto XU = transposeXU( allUnitigPatterns ); // this will consume allUnitigPatterns while transposing
@@ -344,10 +366,10 @@ void map_reads::execute ()
 
     //generate the pyseer input
     cout << "[Generating pyseer input]..." << endl;
-    generatePyseerInput(allReadFilesNames, outputFolder, XU, nbContigs);
+    generatePyseerInput(allReadFilesNames, outputFolder, XU, nbContigs, compress);
     cout << "[Generating pyseer input] - Done!" << endl;
 
-    cout << "Number of unique patterns: " << getNbLinesInFile(outputFolder+string("/unitigs.unique_rows.Rtab")) << endl;
+    //cout << "Number of unique patterns: " << getNbLinesInFile(outputFolder+string("/unitigs.unique_rows.Rtab")) << endl;
 
     // Remove the global graph pointer, otherwise its destructor is called
     // twice by GATB (after main) giving a HDF5 error

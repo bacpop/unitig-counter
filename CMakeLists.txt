@@ -68,7 +68,7 @@ include (GatbCore)
 # find Boost
 set(BOOST_ROOT /usr/bin/include)
 set(Boost_USE_STATIC_LIBS   ON)
-FIND_PACKAGE(Boost 1.69.0 COMPONENTS program_options filesystem system regex REQUIRED)
+FIND_PACKAGE(Boost 1.69.0 COMPONENTS program_options filesystem system regex iostreams REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 # cdbg-ops target
@@ -102,7 +102,7 @@ set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 include_directories (${PROGRAM_SOURCE_DIR})
 file (GLOB_RECURSE  ProjectFiles  ${PROGRAM_SOURCE_DIR}/*.cpp)
 add_executable(${PROGRAM} ${ProjectFiles})
-target_link_libraries(${PROGRAM} ${gatb-core-libraries} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
+target_link_libraries(${PROGRAM} ${gatb-core-libraries} ${Boost_LIBRARIES} -lz -static-libgcc -static-libstdc++)
 
 ################################################################################
 #  INSTALLATION
