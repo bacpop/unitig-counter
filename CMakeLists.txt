@@ -43,6 +43,25 @@ SET (CMAKE_MODULE_PATH ${GATB_CORE_HOME}/cmake)
 set (KSIZE_LIST "32   64   96  128")
 
 ################################################################################
+#  TOOLS
+################################################################################
+
+# Find Boost (do this before setting up GATB)
+if( NOT BOOST_ROOT )
+	# Use the host's preferred installation prefix (from the shell)
+	if( DEFINED ENV{BOOST_ROOT} )
+		set( BOOST_ROOT $ENV{BOOST_ROOT} )
+		message( "Got BOOST_ROOT from shell variable" )
+	else()
+		set(BOOST_ROOT /usr/bin/include)
+	endif()
+endif()
+message( "Find Boost at BOOST_ROOT=\"${BOOST_ROOT}\"" )
+set(Boost_USE_STATIC_LIBS   ON)
+FIND_PACKAGE(Boost 1.69.0 COMPONENTS program_options filesystem system regex iostreams REQUIRED)
+include_directories(${Boost_INCLUDE_DIR})
+
+################################################################################
 # THIRD PARTIES
 ################################################################################
 
@@ -59,17 +78,15 @@ execute_process(COMMAND git apply ${PROJECT_SOURCE_DIR}/0001-Fix-for-boost-inclu
                 WORKING_DIRECTORY ${GATB_CORE_HOME})
 
 # GATB CORE
+# At minimum this part needs to come after finding Boost, in order to reliably get the correct version
 include (GatbCore)
 
-################################################################################
-#  TOOLS
-################################################################################
-
-# find Boost
-set(BOOST_ROOT /usr/bin/include)
-set(Boost_USE_STATIC_LIBS   ON)
-FIND_PACKAGE(Boost 1.69.0 COMPONENTS program_options filesystem system regex REQUIRED)
-include_directories(${Boost_INCLUDE_DIR})
+# Linker options -- strip symbols to make a smaller binary for Release builds
+if("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+	set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wl,--strip-all" )
+elseif("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+	set( CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Wl,-s" )
+endif()
 
 # cdbg-ops target
 set (PROGRAM cdbg-ops)
@@ -102,7 +119,7 @@ set (PROGRAM_SOURCE_DIR ${PROJECT_SOURCE_DIR}/src)
 include_directories (${PROGRAM_SOURCE_DIR})
 file (GLOB_RECURSE  ProjectFiles  ${PROGRAM_SOURCE_DIR}/*.cpp)
 add_executable(${PROGRAM} ${ProjectFiles})
-target_link_libraries(${PROGRAM} ${gatb-core-libraries} ${Boost_LIBRARIES} -static-libgcc -static-libstdc++)
+target_link_libraries(${PROGRAM} ${gatb-core-libraries} ${Boost_LIBRARIES} -lz -static-libgcc -static-libstdc++)
 
 ################################################################################
 #  INSTALLATION
