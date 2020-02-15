@@ -36,6 +36,7 @@ const char* STR_STRAINS_FILE = "-strains";
 const char* STR_KSKMER_SIZE = "-k";
 const char* STR_OUTPUT = "-output";
 const char* STR_NBCORES = "-nb-cores";
+const char* STR_GZIP = "-gzip";
 
 //global vars used by both programs
 Graph *graph;
@@ -47,4 +48,5 @@ void populateParser (Tool *tool) {
   tool->getParser()->push_front (new OptionOneParam (STR_OUTPUT, "Path to the folder where the final and temporary files will be stored.",  false, "output"));
   tool->getParser()->push_front (new OptionOneParam (STR_KSKMER_SIZE, "K-mer size.",  false, "31"));
   tool->getParser()->push_front (new OptionOneParam (STR_STRAINS_FILE, "A text file describing the strains containing 2 columns: 1) ID of the strain; 2) Path to a multi-fasta file containing the sequences of the strain. This file needs a header.",  true));
+  tool->getParser()->push_front (new OptionNoParam (STR_GZIP, "Compress unitig output using gzip.", false));
 }
