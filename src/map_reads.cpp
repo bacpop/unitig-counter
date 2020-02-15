@@ -35,7 +35,6 @@
 #include <boost/iostreams/filtering_stream.hpp>
 #include <boost/iostreams/filter/gzip.hpp>
 #include <boost/iostreams/device/file.hpp>
-
 #include <map>
 #define NB_OF_READS_NOTIFICATION_MAP_AND_PHASE 10 //Nb of reads that the map and phase must process for notification
 using namespace std;
@@ -43,7 +42,7 @@ using namespace std;
 namespace io = boost::iostreams;
 
 void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector< UnitigIdStrandPos > &nodeIdToUnitigId,
-                           boost::dynamic_bitset<>& unitigPattern) {
+                           boost::dynamic_bitset<>& unitigPattern ) {
     int lastUnitig=-1;
 
     //goes through all nodes/kmers of the read
@@ -144,10 +143,7 @@ struct MapAndPhase
 
             //map this read to the graph
             mapReadToTheGraphCore(read, graph, nodeIdToUnitigId, unitigPattern); // unitigIdToCount);
-
-            readIndex++;
         }
-
     }
 };
 
@@ -286,14 +282,14 @@ void generate_XU_unique(const string &filename, const vector< boost::dynamic_bit
 
     //for each pattern
     int i=0;
-    auto it=pattern2Unitigs.begin();
-    for (;it!=pattern2Unitigs.end();++it, ++i) {
+    for( auto it=pattern2Unitigs.begin(); it!=pattern2Unitigs.end(); ++it, ++i ) {
         //print the id of this pattern
         XUUnique << i;
 
-        //print the pattern
-        for (const auto &v : it->first)
-            XUUnique << " " << v;
+        //print the pattern; will produce a *massive* file
+        const auto& pattern = it->first;
+        for( std::size_t i=0; i<pattern.size(); ++i )
+            XUUnique << " " << pattern[i];
         XUUnique << endl;
     }
     //XUUnique.close(); // filtering_ostream's destructor does this for us
@@ -306,22 +302,6 @@ void generatePyseerInput (const vector <string> &allReadFilesNames,
                           int nbContigs, bool compress=false ) {
     //Generate the XU (the pyseer input - the unitigs are rows with strains present)
     //XU_unique is XU is in matrix form (for Rtab input) with the duplicated rows removed
-    cerr << endl << endl << "[Generating pyseer input]..." << endl;
-
-    //Create XU
-    vector< vector<int> > XU(nbContigs);
-    for (auto & v : XU)
-        v.resize(allReadFilesNames.size());
-
-    //populate XU
-    for (int j=0; j<allReadFilesNames.size(); j++) {
-        ifstream inputFile;
-        openFileForReading(tmpFolder+string("/XU_strain_")+to_string(j), inputFile);
-        for (int i = 0; i < nbContigs; i++)
-            inputFile >> XU[i][j];
-        inputFile.close();
-    }
-
     //create the files for pyseer
     {
         generate_XU(outputFolder+string("/unitigs.txt"), outputFolder+string("/graph.nodes"), XU, compress );
@@ -330,15 +310,13 @@ void generatePyseerInput (const vector <string> &allReadFilesNames,
         generate_unique_id_to_original_ids(outputFolder+string("/unitigs.unique_rows_to_all_rows.txt"), pattern2Unitigs);
         generate_XU_unique(outputFolder+string("/unitigs.unique_rows.Rtab"), XU, pattern2Unitigs, compress );
     }
-
-    cerr << "[Generating pyseer input] - Done!" << endl;
-
-
 }
 
 void map_reads::execute ()
 {
-    //get the parameters
+	using bitmap_container_t = typename MapAndPhase::bitmap_container_t;
+
+	//get the parameters
     string outputFolder = stripLastSlashIfExists(getInput()->getStr(STR_OUTPUT));
     string tmpFolder = outputFolder+string("/tmp");
     string longReadsFile = tmpFolder+string("/readsFile");
@@ -354,6 +332,9 @@ void map_reads::execute ()
     //get all the read files' name
     vector <string> allReadFilesNames = getVectorStringFromFile(longReadsFile);
 
+    // use bitmaps/bitsets in order to curb memory use
+    bitmap_container_t allUnitigPatterns; allUnitigPatterns.resize(allReadFilesNames.size());
+
     // We create an iterator over an integer range
     Range<int>::Iterator allReadFilesNamesIt(0, allReadFilesNames.size() - 1);
 
@@ -363,14 +344,16 @@ void map_reads::execute ()
     // We create a dispatcher configured for 'nbCores' cores.
     Dispatcher dispatcher(nbCores, 1);
 
-    cerr << "[Starting mapping process... ]" << endl;
-    cerr << "Using " << nbCores << " cores to map " << allReadFilesNames.size() << " read files." << endl;
+    cout << "[Starting mapping process... ]" << endl;
+    cout << "Using " << nbCores << " cores to map " << allReadFilesNames.size() << " read files." << endl;
 
     // We iterate the range.  NOTE: we could also use lambda expression (easing the code readability)
     uint64_t nbOfReadsProcessed = 0;
     dispatcher.iterate(allReadFilesNamesIt,
-                       MapAndPhase(allReadFilesNames, *graph, outputFolder, tmpFolder, nbOfReadsProcessed, synchro,
-                                   *nodeIdToUnitigId, nbContigs));
+                       MapAndPhase(allReadFilesNames, *graph, nbOfReadsProcessed, synchro,
+                    		   allUnitigPatterns, *nodeIdToUnitigId, nbContigs));
+
+    cout << endl << "[Mapping process finished!]" << endl;
 
     // allUnitigPatterns has all samples/strains over the first dimension and
     // unitig presense patterns over the second dimension (in bitsets).
