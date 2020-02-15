@@ -1,4 +1,6 @@
 # unitig-counter
+[![Anaconda-Server Badge](https://anaconda.org/bioconda/unitig-counter/badges/version.svg)](https://anaconda.org/bioconda/unitig-counter)
+
 Uses a compressed de Bruijn graph (implemented in [GATB](https://github.com/GATB/gatb-core)) to count unitigs in bacterial populations.
 
 ## Details
