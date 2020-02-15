@@ -24,7 +24,7 @@
 ## -------------------------------------------------------------------------
 
 ## Authors (alphabetically): Jacob L., Jaillard M., Lima L.
-## Modified by John Lees
+## Modified by John Lees and Santeri Puranen
 */
 
 #include "global.h"
@@ -43,7 +43,7 @@ using namespace std;
 namespace io = boost::iostreams;
 
 void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector< UnitigIdStrandPos > &nodeIdToUnitigId,
-                           map<int,int> &unitigIdToCount) {
+                           boost::dynamic_bitset<>& unitigPattern) {
     int lastUnitig=-1;
 
     //goes through all nodes/kmers of the read
@@ -70,13 +70,11 @@ void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector<
 
             //get the unitig localization of this kmer
             u_int64_t index = graph.nodeMPHFIndex(node);
-            UnitigIdStrandPos unitigIdStrandPos=nodeIdToUnitigId[index];
+            const auto unitigId = nodeIdToUnitigId[index].unitigId;
 
-            if (lastUnitig != unitigIdStrandPos.unitigId) {
-                if (unitigIdToCount.find(unitigIdStrandPos.unitigId) == unitigIdToCount.end() )
-                    unitigIdToCount[unitigIdStrandPos.unitigId]=0;
-                unitigIdToCount[unitigIdStrandPos.unitigId]++;
-                lastUnitig = unitigIdStrandPos.unitigId;
+            if( lastUnitig != unitigId ) {
+            	unitigPattern.set(unitigId);
+                lastUnitig = unitigId;
             }
         }
     }
@@ -85,12 +83,16 @@ void mapReadToTheGraphCore(const string &read, const Graph &graph, const vector<
 // We define a functor that will be cloned by the dispatcher
 struct MapAndPhase
 {
-    const vector<string> &allReadFilesNames;
+	using bitmap_t = boost::dynamic_bitset<>;
+	using bitmap_container_t = vector< bitmap_t >;
+
+	const vector<string> &allReadFilesNames;
     const Graph& graph;
-    const string &outputFolder;
-    const string &tmpFolder;
+    //const string &outputFolder;
+    //const string &tmpFolder;
     uint64_t &nbOfReadsProcessed;
     ISynchronizer* synchro;
+	vector<bitmap_t>& allUnitigPatterns;
     vector< UnitigIdStrandPos > &nodeIdToUnitigId;
     int nbContigs;
 
@@ -105,8 +107,8 @@ struct MapAndPhase
             synchro->lock ();
 
             nbOfReadsProcessed+=NB_OF_READS_NOTIFICATION_MAP_AND_PHASE;
-            cerr << '\r' << nbOfReadsProcessed << " reads processed.";
-            cerr.flush();
+            cout << '\r' << nbOfReadsProcessed << " reads processed.";
+            cout.flush();
 
             // We unlock the synchronizer
             synchro->unlock ();
@@ -114,11 +116,12 @@ struct MapAndPhase
     };
 
     MapAndPhase (const vector<string> &allReadFilesNames, const Graph& graph,
-                 const string &outputFolder, const string &tmpFolder, uint64_t &nbOfReadsProcessed, ISynchronizer* synchro,
-                 vector< UnitigIdStrandPos > &nodeIdToUnitigId, int nbContigs) :
-        allReadFilesNames(allReadFilesNames), graph(graph), outputFolder(outputFolder), tmpFolder(tmpFolder),
-        nbOfReadsProcessed(nbOfReadsProcessed), synchro(synchro), nodeIdToUnitigId(nodeIdToUnitigId),
-        nbContigs(nbContigs){}
+                 uint64_t &nbOfReadsProcessed, ISynchronizer* synchro,
+				 bitmap_container_t &allUnitigPatterns,
+				 vector< UnitigIdStrandPos > &nodeIdToUnitigId, int nbContigs) :
+        allReadFilesNames(allReadFilesNames), graph(graph),
+        nbOfReadsProcessed(nbOfReadsProcessed), synchro(synchro),
+        allUnitigPatterns(allUnitigPatterns), nodeIdToUnitigId(nodeIdToUnitigId), nbContigs(nbContigs){}
 
     void operator()(int i) {
         // We declare an input Bank and use it locally
@@ -129,13 +132,10 @@ struct MapAndPhase
         MapAndPhaseIteratorListener* mapAndPhaseIteratorListener = new MapAndPhaseIteratorListener(nbOfReadsProcessed, synchro);
         SubjectIterator <Sequence> it(inputBank->iterator(), NB_OF_READS_NOTIFICATION_MAP_AND_PHASE, mapAndPhaseIteratorListener);
 
-        //XU_strain_i = how many times each unitig map to a strain
-        ofstream mappingOutputFile;
-        openFileForWriting(tmpFolder+string("/XU_strain_")+to_string(i), mappingOutputFile);
-
         // We loop over sequences.
-        unsigned long readIndex = 0;
-        map<int,int> unitigIdToCount; //TODO: change this to a vector
+        auto& unitigPattern = allUnitigPatterns[i];
+        unitigPattern.resize(nbContigs);
+
         for (it.first(); !it.isDone(); it.next()) {
             string read = (it.item()).toString();
             //transform the read to upper case
@@ -143,20 +143,11 @@ struct MapAndPhase
                 read[j]=toupper(read[j]);
 
             //map this read to the graph
-            mapReadToTheGraph(read, i, readIndex, graph, nodeIdToUnitigId, unitigIdToCount);
+            mapReadToTheGraphCore(read, graph, nodeIdToUnitigId, unitigPattern); // unitigIdToCount);
 
             readIndex++;
         }
 
-        //output info for mapping - the number of times the unitig appear in the strain
-        for (int i=0;i<nbContigs;i++) {
-            if (unitigIdToCount.find(i) == unitigIdToCount.end() )
-                mappingOutputFile << "0 ";
-            else
-                mappingOutputFile << "1 ";
-        }
-
-        mappingOutputFile.close();
     }
 };
 
@@ -194,24 +185,19 @@ transposeXU( std::vector< boost::dynamic_bitset<> > &XUT )
 }
 
 //pattern is the unitig line
-map< vector<int>, vector<int> > getUnitigsWithSamePattern (const vector< vector<int> > &XU, int nbContigs) {
-    map< vector<int>, vector<int> > pattern2Unitigs;
+map< boost::dynamic_bitset<>, vector<int> > getUnitigsWithSamePattern (const vector< boost::dynamic_bitset<> > &XU) {
+	using bitmap_t = boost::dynamic_bitset<>;
+	using mapping_t = map< bitmap_t, vector<int> >;
 
-    for (int i=0;i<XU.size();i++) { //goes through all unitigs
-        if (pattern2Unitigs.count(XU[i])==0) { //pattern of unitig i is not in pattern2Unitigs
-            //create a vector with unitig i
-            vector<int> unitigs;
-            unitigs.push_back(i);
+	// storage for unique patterns linked to all parent unitigs.
+	mapping_t pattern2Unitigs;
 
-            //insert this pattern and his new set to the map
-            pattern2Unitigs.insert(make_pair(XU[i], unitigs));
-        } else {
-            //pattern of unitig i is already in pattern2Unitigs, just add
-            pattern2Unitigs[XU[i]].push_back(i);
-        }
-    }
+	for( std::size_t i=0; i<XU.size(); ++i ) //goes through all unitigs
+	{
+		pattern2Unitigs[XU[i]].push_back(i);
+	}
 
-    return pattern2Unitigs;
+	return pattern2Unitigs;
 }
 
 bool init_sink( const std::string& filename, io::filtering_ostream& os, bool compress=false )
@@ -243,16 +229,19 @@ void generate_XU(const string &filename, const string &nodesFile, const vector< 
     int id;
     string seq;
 
-    for (int i=0;i<XU.size();i++) {
-        // print the unitig sequence
+    for( auto& XUi: XU ) {
+    	// print the unitig sequence
         nodesFileReader >> id >> seq;
         XUFile << seq << " |";
 
-        //print the strains present
-        for (int j=0;j<XU[i].size();j++)
-            if (XU[i][j] > 0) {
-                XUFile << " " << (*strains)[j].id << ":" << XU[i][j];
-            }
+        // print the strains present
+        // by finding all the set bits
+        auto pos = XUi.find_first();
+        while( pos != bitmap_t::npos )
+        {
+        	XUFile << " " << (*strains)[pos].id << ":1";
+        	pos = XUi.find_next(pos);
+        }
         XUFile << endl;
     }
     nodesFileReader.close();
@@ -260,14 +249,13 @@ void generate_XU(const string &filename, const string &nodesFile, const vector< 
 }
 
 void generate_unique_id_to_original_ids(const string &filename,
-                                        const map< vector<int>, vector<int> > &pattern2Unitigs) {
+                                        const map< boost::dynamic_bitset<>, vector<int> > &pattern2Unitigs) {
     ofstream uniqueIdToOriginalIdsFile;
     openFileForWriting(filename, uniqueIdToOriginalIdsFile);
 
     //for each pattern
     int i=0;
-    auto it=pattern2Unitigs.begin();
-    for (;it!=pattern2Unitigs.end();++it, ++i) {
+    for( auto it=pattern2Unitigs.begin(); it!=pattern2Unitigs.end(); ++it, ++i ) {
         //print the id of this pattern
         uniqueIdToOriginalIdsFile << i << " = ";
 
