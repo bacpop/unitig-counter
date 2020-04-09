@@ -44,6 +44,14 @@ ID      Path
 Output is in `output/unitigs.txt` and can be used with `--kmers` in pyseer. You can also test just the
 unique patterns in `output/unitigs.unique_rows.txt` with the `--Rtab` option.
 
+## Cleaning up output
+Some unitigs in the output may span multiple input contigs. If you wish to restrict your unitig calls to those appearing in assembled contigs, you can either:
+
+1. Run [unitig-caller](https://github.com/johnlees/unitig-caller) on the input genomes, using the unitig calls from your run.
+2. Run the [pufferize script](https://github.com/GATB/bcalm/blob/master/scripts/pufferize.py) in the `gatb`/`bcalm` package, which will cut unitigs that span multiple contigs.
+
+Thanks to @rchikhi and @apredeus for discovering this.
+
 ## Extracting distances
 Two get the shortest sequence distance between two unitigs:
 ```
