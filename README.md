@@ -6,6 +6,8 @@ Uses a compressed de Bruijn graph (implemented in [GATB](https://github.com/GATB
 ## Details
 This is a slightly modified version of the unitig and graph steps in [DBGWAS](https://gitlab.com/leoisl/dbgwas/) software, repurposed for input into [pyseer](https://pyseer.readthedocs.io/en/master/).
 
+**NB** We cannot offer support for unitig-counter, it is provided 'as-is'. Please consider using [unitig-caller](https://github.com/bacpop/unitig-caller) instead, which offers the same functionality.
+
 ## Citation
 If you use this, please cite the DBGWAS paper:
 
